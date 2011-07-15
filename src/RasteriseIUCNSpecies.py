@@ -10,12 +10,15 @@ def getSnapMetres(coord,up):
 PRIORITY_FIELDNAME = "Priority"
 ALL_SPECIES_FC = "Ranges"
 SPECIES_TABLE = "SpeciesData"
-SPECIES_FC = "SpeciesLayer"
 EXTENT_FC = "in_memory\\RangesFC"
 
 #INPUT PARAMETERS
 speciesFCPath = arcpy.GetParameterAsText(0)
 rasterWorkspace = arcpy.GetParameter(1)
+scratchFC = str(rasterWorkspace) + "\\tmp"
+
+#ENVIRONMENT VARIABLES
+arcpy.env.overwriteOutput = True
 
 #ADD THE PRIORITY FIELD IF IT IS NOT ALREADY PRESENT
 if (len(arcpy.ListFields(speciesFCPath, PRIORITY_FIELDNAME))==0):
@@ -41,17 +44,20 @@ for species in AllSpecies:
     if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
         arcpy.AddMessage("Species ID:" + id)
         arcpy.AddMessage("Selecting features")
-        arcpy.MakeFeatureLayer_management(ALL_SPECIES_FC, SPECIES_FC, "ID_NO='" + id + "'")
-        count = arcpy.GetCount_management(SPECIES_FC)
+#        arcpy.MakeFeatureLayer_management(ALL_SPECIES_FC, SPECIES_FC, "ID_NO='" + id + "'")        
+        arcpy.SelectLayerByAttribute_management(ALL_SPECIES_FC, "NEW_SELECTION", "ID_NO='" + id + "'")
+        arcpy.AddMessage("Copying features")
+        arcpy.CopyFeatures_management(ALL_SPECIES_FC, scratchFC)
+        count = arcpy.GetCount_management(scratchFC)
         arcpy.AddMessage("Getting extent")
         if (count==1):
-            features = arcpy.SearchCursor(SPECIES_FC, "ID_NO='" + id + "'")
+            features = arcpy.SearchCursor(scratchFC, "ID_NO='" + id + "'")
             for feature in features:
                 geometry = feature.Shape
                 extent = geometry.Extent
             del features
         else:    
-            arcpy.MinimumBoundingGeometry_management(SPECIES_FC, EXTENT_FC, "ENVELOPE", "ALL")
+            arcpy.MinimumBoundingGeometry_management(scratchFC, EXTENT_FC, "ENVELOPE", "ALL")
             dsc = arcpy.Describe(EXTENT_FC)
             extent = dsc.Extent    
             arcpy.Delete_management(EXTENT_FC)
@@ -66,5 +72,4 @@ for species in AllSpecies:
         arcpy.AddMessage("maxy:" + str(maxy))
         arcpy.AddMessage("Creating raster" + str(rasterWorkspace) + "\\ID" + id)
         arcpy.env.extent = arcpy.Extent(minx, miny, maxx, maxy)
-        arcpy.PolygonToRaster_conversion(SPECIES_FC, "ID_NO", str(rasterWorkspace) + "\\ID" + id, "MAXIMUM_AREA", PRIORITY_FIELDNAME, 1000)
-        arcpy.Delete_management(SPECIES_FC)
+        arcpy.PolygonToRaster_conversion(scratchFC, "ID_NO", str(rasterWorkspace) + "\\ID" + id, "MAXIMUM_AREA", PRIORITY_FIELDNAME, 1000)
