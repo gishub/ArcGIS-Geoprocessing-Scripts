@@ -30,6 +30,8 @@ if (len(arcpy.ListFields(speciesFL, PRIORITY_FIELDNAME))==0):
 #CREATE A TABLE OF UNIQUE SPECIES TO ITERATE THROUGH
 arcpy.AddMessage("Creating unique species table")
 arcpy.Frequency_analysis(speciesFL, SPECIES_TABLE, "ID_NO")
+count = str(arcpy.GetCount_management(SPECIES_TABLE))
+counter = 1
 
 #ITERATE THROUGH THE SPECIES TO OUTPUT THE RASTER FOR EACH ONE
 arcpy.AddMessage("Iterating through species")
@@ -37,7 +39,7 @@ AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
 for species in AllSpecies:
     id = species.ID_NO    
     if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
-        arcpy.AddMessage("Species ID:" + id)
+        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ")")
         arcpy.AddMessage("Selecting features")
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
         arcpy.AddMessage("Copying features")
@@ -70,3 +72,4 @@ for species in AllSpecies:
         arcpy.PolygonToRaster_conversion(scratchFC, "ID_NO", str(rasterWorkspace) + "\\ID" + id, "MAXIMUM_AREA", PRIORITY_FIELDNAME, 1000)
         arcpy.env.extent = None #Reset the extent
         arcpy.Delete_management(scratchFC)
+        counter = counter + 1
