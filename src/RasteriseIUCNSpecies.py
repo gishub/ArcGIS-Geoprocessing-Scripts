@@ -19,6 +19,8 @@ scratchFC = r"E:\cottaan\My Documents\ArcGIS\tmp.shp"
 
 #ENVIRONMENT VARIABLES
 arcpy.env.overwriteOutput = True
+arcpy.env.rasterStatistics = None
+arcpy.env.outputCoordinateSystem = "Coordinate Systems/Projected Coordinate Systems/World/WGS 1984 Web Mercator.prj"
 
 #ADD THE PRIORITY FIELD IF IT IS NOT ALREADY PRESENT
 if (len(arcpy.ListFields(speciesFL, PRIORITY_FIELDNAME))==0):
@@ -44,7 +46,6 @@ for species in AllSpecies:
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
         arcpy.AddMessage("Copying features")
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
-        arcpy.AddMessage("Counting features")
         count = arcpy.GetCount_management(scratchFC)
         arcpy.AddMessage("Getting extent")
         if (count==1):
