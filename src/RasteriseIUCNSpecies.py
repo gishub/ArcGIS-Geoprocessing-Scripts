@@ -21,6 +21,7 @@ scratchFC = r"E:\cottaan\My Documents\ArcGIS\tmp.shp"
 arcpy.env.overwriteOutput = True
 arcpy.env.rasterStatistics = None
 arcpy.env.outputCoordinateSystem = "Coordinate Systems/Projected Coordinate Systems/World/WGS 1984 Web Mercator.prj"
+arcpy.env.compression = "PackBits"
 
 #ADD THE PRIORITY FIELD IF IT IS NOT ALREADY PRESENT
 if (len(arcpy.ListFields(speciesFL, PRIORITY_FIELDNAME))==0):
