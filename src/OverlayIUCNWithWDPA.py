@@ -29,7 +29,7 @@ AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
 for species in AllSpecies:
     id = species.ID_NO    
     if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
-        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ")")
+        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
         arcpy.AddMessage("Selecting features")
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
         arcpy.AddMessage("Copying features")
