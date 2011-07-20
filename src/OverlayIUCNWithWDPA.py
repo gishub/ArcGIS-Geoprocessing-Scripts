@@ -1,0 +1,44 @@
+import arcpy
+#CONSTANT DECLARATIONS
+ALL_SPECIES_FC = "Ranges"
+SPECIES_TABLE = "SpeciesData"
+INTERSECTION_FC = "in_memory\\intersection"
+scratchFC = r"in_memory\scratchFC"
+
+#INPUT PARAMETERS
+speciesFL = arcpy.GetParameterAsText(0)
+paFL = arcpy.GetParameterAsText(1)
+outputWorkspace = arcpy.GetParameterAsText(2)
+outputFC = outputWorkspace + "\\intersections"
+
+#ENVIRONMENT VARIABLES
+arcpy.env.overwriteOutput = True
+arcpy.env.outputCoordinateSystem = "Coordinate Systems/Projected Coordinate Systems/World/WGS 1984 Web Mercator.prj"
+
+#CREATE A TABLE OF UNIQUE SPECIES TO ITERATE THROUGH
+arcpy.AddMessage("Creating unique species table")
+arcpy.Frequency_analysis(speciesFL, SPECIES_TABLE, "ID_NO")
+count = str(arcpy.GetCount_management(SPECIES_TABLE))
+counter = 1
+
+#ITERATE THROUGH THE SPECIES TO OVERLAY THE PAS FOR EACH ONE
+arcpy.AddMessage("Iterating through species")
+AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
+for species in AllSpecies:
+    id = species.ID_NO    
+    if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
+        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ")")
+        arcpy.AddMessage("Selecting features")
+        arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
+        arcpy.AddMessage("Copying features")
+        arcpy.CopyFeatures_management(speciesFL, scratchFC)
+        arcpy.AddMessage("Intersecting features")
+        arcpy.Intersect_analysis([scratchFC,paFL],INTERSECTION_FC)
+        if arcpy.Exists(outputFC):
+            arcpy.AddMessage("Appending features to output feature class")
+            arcpy.Append_management(INTERSECTION_FC,outputFC)
+        else:
+            arcpy.AddMessage("Creating output feature class")
+            arcpy.CopyFeatures_management(INTERSECTION_FC,outputFC)
+        arcpy.Delete_management(scratchFC)
+        counter = counter + 1
