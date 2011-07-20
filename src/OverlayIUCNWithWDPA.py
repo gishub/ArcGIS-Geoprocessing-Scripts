@@ -3,7 +3,7 @@ import arcpy
 ALL_SPECIES_FC = "Ranges"
 SPECIES_TABLE = "SpeciesData"
 INTERSECTION_FC = "in_memory\\intersection"
-scratchFC = r"in_memory\scratchFC"
+scratchFC = r"E:\cottaan\My Documents\ArcGIS\scratchFC.shp"
 
 #INPUT PARAMETERS
 speciesFL = arcpy.GetParameterAsText(0)
