@@ -46,6 +46,6 @@ for species in AllSpecies:
             insertrow.spID = int(id) 
             insertrow.wdpaid = int(row.wdpaid) 
             insertrows.insertRow(insertrow)             
-            arcpy.AddMessage(str(int(row.wdpaid)) + " " + id);
+#            arcpy.AddMessage(str(int(row.wdpaid)) + " " + id);
         arcpy.Delete_management(scratchFC)
         counter = counter + 1
