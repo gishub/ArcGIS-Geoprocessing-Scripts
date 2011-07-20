@@ -10,7 +10,9 @@ speciesFL = arcpy.GetParameterAsText(0)
 paFL = arcpy.GetParameterAsText(1)
 outputWorkspace = arcpy.GetParameterAsText(2)
 outputFC = outputWorkspace + "\\intersections"
-
+if arcpy.Exists(outputFC):
+    arcpy.Delete_management(outputFC)
+    
 #ENVIRONMENT VARIABLES
 arcpy.env.overwriteOutput = True
 arcpy.env.outputCoordinateSystem = "Coordinate Systems/Projected Coordinate Systems/World/WGS 1984 Web Mercator.prj"
