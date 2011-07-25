@@ -11,6 +11,7 @@ paFL = arcpy.GetParameterAsText(1)
 outputWorkspace = arcpy.GetParameterAsText(2)
 outputtoSingleFC = arcpy.GetParameter(3) #1 to create a single feature class
 outputFC = outputWorkspace + "\\intersections"
+outputFCList = []
 if arcpy.Exists(outputFC):
     arcpy.Delete_management(outputFC)
     
@@ -45,6 +46,14 @@ for species in AllSpecies:
                 arcpy.AddMessage("Creating output feature class")
                 arcpy.CopyFeatures_management(INTERSECTION_FC,outputFC)
         else:
-            arcpy.CopyFeatures_management(INTERSECTION_FC,outputWorkspace + "\\I" + id)                
+            outputFC = outputWorkspace + "\\I" + id
+            arcpy.CopyFeatures_management(INTERSECTION_FC,outputFC)  
+            outputFCList.append(outputFC)             
         arcpy.Delete_management(scratchFC)
         counter = counter + 1
+if (outputtoSingleFC==0):
+    arcpy.AddMessage("Merging feature classes" + "(" + str(datetime.datetime.now()) + ")")
+    arcpy.Merge_management(outputFCList,outputWorkspace + "\\intersections")
+    arcpy.AddMessage("Deleting temporary feature classes" + "(" + str(datetime.datetime.now()) + ")")
+    for item in outputFCList:
+        arcpy.Delete_management(item)
