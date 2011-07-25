@@ -9,6 +9,7 @@ scratchFC = r"E:\cottaan\My Documents\ArcGIS\scratchFC.shp"
 speciesFL = arcpy.GetParameterAsText(0)
 paFL = arcpy.GetParameterAsText(1)
 outputWorkspace = arcpy.GetParameterAsText(2)
+outputtoSingleFC = arcpy.GetParameter(3) #1 to create a single feature class
 outputFC = outputWorkspace + "\\intersections"
 if arcpy.Exists(outputFC):
     arcpy.Delete_management(outputFC)
@@ -36,11 +37,14 @@ for species in AllSpecies:
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
         arcpy.AddMessage("Intersecting features")
         arcpy.Intersect_analysis([scratchFC,paFL],INTERSECTION_FC)
-        if arcpy.Exists(outputFC):
-            arcpy.AddMessage("Appending features to output feature class")
-            arcpy.Append_management(INTERSECTION_FC,outputFC)
+        if (outputtoSingleFC==1):
+            if arcpy.Exists(outputFC):
+                arcpy.AddMessage("Appending features to output feature class")
+                arcpy.Append_management(INTERSECTION_FC,outputFC)
+            else:
+                arcpy.AddMessage("Creating output feature class")
+                arcpy.CopyFeatures_management(INTERSECTION_FC,outputFC)
         else:
-            arcpy.AddMessage("Creating output feature class")
-            arcpy.CopyFeatures_management(INTERSECTION_FC,outputFC)
+            arcpy.CopyFeatures_management(INTERSECTION_FC,outputWorkspace + "\\I" + id)                
         arcpy.Delete_management(scratchFC)
         counter = counter + 1
