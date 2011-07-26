@@ -42,14 +42,11 @@ AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
 for species in AllSpecies:
     id = species.ID_NO    
     if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
-        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ")")
-        arcpy.AddMessage("Selecting features")
+        arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
-        arcpy.AddMessage("Copying features")
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
-        count = arcpy.GetCount_management(scratchFC)
-        arcpy.AddMessage("Getting extent")
-        if (count==1):
+        count2 = arcpy.GetCount_management(scratchFC)
+        if (count2==1):
             features = arcpy.SearchCursor(scratchFC, "ID_NO='" + id + "'")
             for feature in features:
                 geometry = feature.Shape
@@ -60,7 +57,7 @@ for species in AllSpecies:
             dsc = arcpy.Describe(EXTENT_FC)
             extent = dsc.Extent    
             arcpy.Delete_management(EXTENT_FC)
-        arcpy.AddMessage("Calculating raster extent")
+        arcpy.AddMessage("Raster extent:")
         minx = getSnapMetres(extent.XMin, False)
         maxx = getSnapMetres(extent.XMax, True)
         miny = getSnapMetres(extent.YMin, False)

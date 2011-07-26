@@ -9,7 +9,7 @@ scratchFC = r"E:\cottaan\My Documents\ArcGIS\scratchFC.shp"
 speciesFL = arcpy.GetParameterAsText(0)
 paFL = arcpy.GetParameterAsText(1)
 outputWorkspace = arcpy.GetParameterAsText(2)
-outputtoSingleFC = arcpy.GetParameter(3) #1 to create a single feature class
+singleOutputFC = arcpy.GetParameter(3) #1 to use separate FC for each species
 outputFC = outputWorkspace + "\\intersections"
 outputFCList = []
 if arcpy.Exists(outputFC):
@@ -32,13 +32,13 @@ for species in AllSpecies:
     id = species.ID_NO    
     if (id!=" "):# for some reason a NULL is a space in the FREQUENCY table
         arcpy.AddMessage("Species ID:" + id + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
-        arcpy.AddMessage("Selecting features")
+#        arcpy.AddMessage("Selecting features")
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
-        arcpy.AddMessage("Copying features")
+#        arcpy.AddMessage("Copying features")
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
-        arcpy.AddMessage("Intersecting features")
+#        arcpy.AddMessage("Intersecting features")
         arcpy.Intersect_analysis([scratchFC,paFL],INTERSECTION_FC)
-        if (outputtoSingleFC==1):
+        if (singleOutputFC==1):
             if arcpy.Exists(outputFC):
                 arcpy.AddMessage("Appending features to output feature class")
                 arcpy.Append_management(INTERSECTION_FC,outputFC)
@@ -51,9 +51,9 @@ for species in AllSpecies:
             outputFCList.append(outputFC)             
         arcpy.Delete_management(scratchFC)
         counter = counter + 1
-if (outputtoSingleFC==0):
-    arcpy.AddMessage("Merging feature classes" + "(" + str(datetime.datetime.now()) + ")")
+if (singleOutputFC==0):
+    arcpy.AddMessage("Merging feature classes " + "(" + str(datetime.datetime.now()) + ")")
     arcpy.Merge_management(outputFCList,outputWorkspace + "\\intersections")
-    arcpy.AddMessage("Deleting temporary feature classes" + "(" + str(datetime.datetime.now()) + ")")
+    arcpy.AddMessage("Deleting temporary feature classes " + "(" + str(datetime.datetime.now()) + ")")
     for item in outputFCList:
         arcpy.Delete_management(item)
