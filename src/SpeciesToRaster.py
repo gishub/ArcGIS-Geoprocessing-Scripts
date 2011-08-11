@@ -7,7 +7,6 @@ def getSnapMetres(coord,up):
         return (((int(coord/1000))-1)*1000)
 
 #CONSTANT DECLARATIONS
-EXTENT_FC = "in_memory\\RangesFC"
 PRIORITY_FIELDNAME = "Priority"
 
 #ENVIRONMENT VARIABLES
@@ -21,10 +20,8 @@ speciesFL = arcpy.GetParameterAsText(0)
 outputFile = arcpy.GetParameterAsText(1)
 
 #LOGIC
-arcpy.MinimumBoundingGeometry_management(speciesFL, EXTENT_FC, "ENVELOPE", "ALL")
-dsc = arcpy.Describe(EXTENT_FC)
+dsc = arcpy.Describe(speciesFL)
 extent = dsc.Extent    
-arcpy.Delete_management(EXTENT_FC)
 minx = getSnapMetres(extent.XMin, False)
 maxx = getSnapMetres(extent.XMax, True)
 miny = getSnapMetres(extent.YMin, False)
