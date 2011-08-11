@@ -1,4 +1,4 @@
-import arcpy, numpy
+import arcpy, numpy, datetime
 #PARAMETERS
 speciesRasterLayer = arcpy.GetParameterAsText(0)
 outputFile = arcpy.GetParameterAsText(1)
@@ -19,4 +19,4 @@ indices[1].__iadd__(dsc.Extent.XMin)
 #convert to coordinate pairs
 indices2 = numpy.transpose(indices)
 #save to file
-indices2.tofile(outputFile," ")
+numpy.save(outputFile,indices2)
