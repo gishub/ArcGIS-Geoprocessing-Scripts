@@ -7,7 +7,7 @@ def getData(arr): # function that returns only the indices of the cells with dat
     try:
         return numpy.nonzero(arr==1)
     except MemoryError:
-        arcpy.AddMessage("getIndices - Memory Error")
+        arcpy.AddMessage("getData - Memory Error")
 
 def getQuadKey(x,y): # returns the quadkey for the passed tile coordinates, e.g. 27025,16973 will return 132320330230021
     quadKey = ""
