@@ -9,12 +9,6 @@ def getData(arr):
     except MemoryError:
         arcpy.AddMessage("getIndices - Memory Error")
 
-def getCoords(indices):
-    try:
-        return numpy.transpose(indices)
-    except MemoryError:
-        arcpy.AddMessage("getCoords - Memory Error")
-
 def getQuadKey(x,y): # x,y tile coordinates, e.g. 27025,16973
     quadKey = ""
     y = 32767 -y
