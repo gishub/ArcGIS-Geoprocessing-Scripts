@@ -1,17 +1,17 @@
 import arcpy,numpy,math
-#PARAMETERS
+#INPUT PARAMETERS
 speciesRasterLayer = arcpy.GetParameterAsText(0)
 outputFile = arcpy.GetParameterAsText(1)
 
-def getData(arr):
+def getData(arr): # function that returns only the indices of the cells with data==1
     try:
         return numpy.nonzero(arr==1)
     except MemoryError:
         arcpy.AddMessage("getIndices - Memory Error")
 
-def getQuadKey(x,y): # x,y tile coordinates, e.g. 27025,16973
+def getQuadKey(x,y): # returns the quadkey for the passed tile coordinates, e.g. 27025,16973 will return 132320330230021
     quadKey = ""
-    y = 32767 -y
+    y = 32767 -y # the quadkey is based on a y origin based in the northern hemisphere
     for i in range(15, 0, -1):
         digit = 0
         mask = 1 << (i-1)
@@ -22,16 +22,13 @@ def getQuadKey(x,y): # x,y tile coordinates, e.g. 27025,16973
         quadKey += str(digit)
     return quadKey
     
-#LOGIC
-#convert the raster to a numpy array
 try:
-    desc=arcpy.Describe(speciesRasterLayer)
-    if (desc.width*desc.height<1000000000):
-        arr=arcpy.RasterToNumPyArray(speciesRasterLayer,"","","",0)
-        #get all of the data where the values are not NoData
-        data=getData(arr)
-        del arr
-        if (data):
+    desc=arcpy.Describe(speciesRasterLayer) # get the describe object to be able to get the extent of the raster layer
+    if (desc.width*desc.height<1000000000): # hack - for large rasters ArcMap crashes so this like should stop that - probably a memory issue
+        arr=arcpy.RasterToNumPyArray(speciesRasterLayer,"","","",0) # convert the raster to a numpy array       
+        data=getData(arr) # get all of the data where the values are not NoData
+        del arr # delete the full array to free memory
+        if (data): # if there is data
             #get the tile number for the x coordinate
             data[1].__iadd__(int(math.floor((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
             #get the tile number for the y coordinate
@@ -40,8 +37,8 @@ try:
 #            for i in range(len(data[0])):
 #                quadTree = getQuadKey(data[1][i],data[0][i])
 #                arcpy.AddMessage(quadTree)
-            numpy.save(outputFile,data)
-            del data
+            numpy.save(outputFile,data) # save the tile coordinates to a binary file
+            del data # free memory
     else:
         arcpy.AddMessage("Raster exceeds 1Gb")
 except MemoryError:
