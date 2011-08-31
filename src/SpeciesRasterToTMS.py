@@ -43,10 +43,10 @@ try:
             #get the tile number for the y coordinate
             data[0].__imul__(-1) # y values decrease as you go south
             data[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
-            for i in range(len(data[0])):
-                quadTree = getQuadKey(data[1][i],data[0][i])
-                arcpy.AddMessage(quadTree)
-            #numpy.save(outputFile,data)
+#            for i in range(len(data[0])):
+#                quadTree = getQuadKey(data[1][i],data[0][i])
+#                arcpy.AddMessage(quadTree)
+            numpy.save(outputFile,data)
             del data
     else:
         arcpy.AddMessage("Raster exceeds 1Gb")
