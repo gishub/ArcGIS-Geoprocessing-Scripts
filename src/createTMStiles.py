@@ -1,4 +1,4 @@
-import arcpy
+import arcpy,math
 def getQuadKey(x,y): # returns the quadkey for the passed tile coordinates, e.g. 27025,16973 will return 132320330230021
     quadKey = ""
     y=32767-y
