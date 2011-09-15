@@ -40,8 +40,9 @@ try:
             for i in range(len(data[0])):
                 row=rows.newRow()
                 row.speciesID=speciesID
-                row.x=data[0][i]
-                row.y=data[1][i]
+                row.quadkey=getQuadKey(data[0][i],data[1][i])
+                row.mx = (1222.99245*data[0][i]) - 20037508.3
+                row.my = (1222.99245*(data[1][i]+1)) - 20037508.3
                 rows.insertRow(row)
             del data # free memory
             del row
@@ -50,4 +51,3 @@ try:
         arcpy.AddMessage("Raster exceeds 1Gb")
 except MemoryError:
     arcpy.AddMessage("Something went horribly wrong")
- 
