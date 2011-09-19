@@ -4,13 +4,18 @@ speciesRasterLayer = arcpy.GetParameterAsText(0)
 outputFile = arcpy.GetParameterAsText(1)
 err="Unable to write to file '" + outputFile + "' "
 
-def getData(arr2): # function that returns only the indices of the cells with data==1
+def getXY(arr): # function that returns only the indices of the cells with data>0
     try:
-        xy=numpy.nonzero(arr2>0) #get the xy coordinates
-        values=arr2[xy] #get the raster values
-        return xy,values
+        xy=numpy.nonzero(arr>0) #get the xy coordinates
+        return xy
     except MemoryError:
-        arcpy.AddMessage(err + "(Memory error)")
+        arcpy.AddMessage(err + "(Memory error in getting xy coordinates)")
+
+def getValues(arr,xy): # function that returns the values from the raster
+    try:
+        return arr[xy]
+    except MemoryError:
+        arcpy.AddMessage(err + "(Memory error in getting raster values)")
     
 try:
     desc=arcpy.Describe(speciesRasterLayer) # get the describe object to be able to get the extent of the raster layer
@@ -19,7 +24,8 @@ try:
     else:
         if (desc.width*desc.height<1000000000): # hack - for large rasters ArcMap crashes so this like should stop that - probably a memory issue
             arr=arcpy.RasterToNumPyArray(speciesRasterLayer,"","","",0) # convert the raster to a numpy array
-            xy,values=getData(arr) # get all of the xy coordinates and the values where the values are not NoData
+            xy=getXY(arr) # get all of the xy coordinates where there are values
+            values=getValues(arr,xy) # get the raster values using the xy coordinates
             del arr # delete the full array to free memory
             if (xy): # if there are xy coordinates - i.e. no memory error
                 #get the tile number for the x coordinate
@@ -29,7 +35,6 @@ try:
                 xy[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
                 #create a new array which is the concatenation of the x indices array, y indices array and the array values
                 outputArr=numpy.concatenate((xy[0],xy[1],values))
-                arcpy.AddMessage("3")       
                 #output to file
                 f = open(outputFile,'wb')
                 cPickle.dump(outputArr, f, protocol=2)
