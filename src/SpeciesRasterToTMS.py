@@ -19,28 +19,33 @@ def getValues(arr,xy): # function that returns the values from the raster
     
 try:
     desc=arcpy.Describe(speciesRasterLayer) # get the describe object to be able to get the extent of the raster layer
-    if (desc.meanCellWidth==0):
-        arcpy.AddMessage(err + "(Raster has no cols/rows)") # hack - if the polygon is smaller than the raster cell size it will not be rasterized
+    cellWidth=desc.meanCellWidth
+    cellHeight=desc.meanCellHeight
+    if (cellWidth==0 or cellHeight==0):
+        arcpy.AddMessage(err + "(Raster has no cols/rows)") # workaround for rasterising small polygons in ArcGIS issue - e.g. for species 13132
     else:
-        if (desc.width*desc.height<1000000000): # hack - for large rasters ArcMap crashes so this like should stop that - probably a memory issue
-            arr=arcpy.RasterToNumPyArray(speciesRasterLayer,"","","",0) # convert the raster to a numpy array
-            xy=getXY(arr) # get all of the xy coordinates where there are values
-            values=getValues(arr,xy) # get the raster values using the xy coordinates
-            del arr # delete the full array to free memory
-            if (xy): # if there are xy coordinates - i.e. no memory error
-                #get the tile number for the x coordinate
-                xy[1].__iadd__(int(math.floor((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
-                #get the tile number for the y coordinate
-                xy[0].__imul__(-1) # y values decrease as you go south
-                xy[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
-                #create a new array which is the concatenation of the x indices array, y indices array and the array values
-                outputArr=numpy.concatenate((xy[0],xy[1],values))
-                #output to file
-                f = open(outputFile,'wb')
-                cPickle.dump(outputArr, f, protocol=2)
-                f.close()                
-                del data # free memory
+        if (math.isinf(cellWidth) or math.isinf(cellHeight)=="True"):
+            arcpy.AddMessage(err + "(Raster has cells with infinite width/height)") # workaround for rasterising small polygons in ArcGIS issue - e.g. for species 136520
         else:
-            arcpy.AddMessage(err + "(Raster exceeds 1Gb)")
+            if (desc.width*desc.height<1000000000): # hack - for large rasters ArcMap crashes so this like should stop that - probably a memory issue
+                arr=arcpy.RasterToNumPyArray(speciesRasterLayer,"","","",0) # convert the raster to a numpy array
+                xy=getXY(arr) # get all of the xy coordinates where there are values
+                values=getValues(arr,xy) # get the raster values using the xy coordinates
+                del arr # delete the full array to free memory
+                if (xy): # if there are xy coordinates - i.e. no memory error
+                    #get the tile number for the x coordinate
+                    xy[1].__iadd__(int(math.floor((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+                    #get the tile number for the y coordinate
+                    xy[0].__imul__(-1) # y values decrease as you go south
+                    xy[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+                    #create a new array which is the concatenation of the x indices array, y indices array and the array values
+                    outputArr=numpy.concatenate((xy[0],xy[1],values))
+                    #output to file
+                    f = open(outputFile,'wb')
+                    cPickle.dump(outputArr, f, protocol=2)
+                    f.close()                
+                    del data # free memory
+            else:
+                arcpy.AddMessage(err + "(Raster exceeds 1Gb)")
 except MemoryError:
     arcpy.AddMessage(err + "(Something went horribly wrong)")
