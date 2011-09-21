@@ -24,7 +24,7 @@ try:
     if (cellWidth==0 or cellHeight==0):
         arcpy.AddMessage(err + "(Raster has no cols/rows)") # workaround for rasterising small polygons in ArcGIS issue - e.g. for species 13132
     else:
-        if (math.isinf(cellWidth) or math.isinf(cellHeight)=="True"):
+        if (math.isinf(cellWidth) or math.isinf(cellHeight)):
             arcpy.AddMessage(err + "(Raster has cells with infinite width/height)") # workaround for rasterising small polygons in ArcGIS issue - e.g. for species 136520
         else:
             if (desc.width*desc.height<1000000000): # hack - for large rasters ArcMap crashes so this like should stop that - probably a memory issue
@@ -44,7 +44,8 @@ try:
                     f = open(outputFile,'wb')
                     cPickle.dump(outputArr, f, protocol=2)
                     f.close()                
-                    del data # free memory
+                    del xy # free memory
+                    del values
             else:
                 arcpy.AddMessage(err + "(Raster exceeds 1Gb)")
 except MemoryError:
