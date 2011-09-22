@@ -1,5 +1,6 @@
 import numpy,arcpy,os
-arcpy.env.workspace = r"E:\cottaan\My Documents\SpeciesGridData"
+path = arcpy.GetParameterAsText(0)
+arcpy.env.workspace = path
 for file in arcpy.ListFiles("*.npy"):
     fileinfo=os.stat(arcpy.env.workspace + os.sep + file)
     if fileinfo.st_size>0:
