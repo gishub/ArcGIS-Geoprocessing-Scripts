@@ -23,9 +23,10 @@ rows = arcpy.InsertCursor(outputTable)
 for coord in coords:
     row=rows.newRow()
     row.speciesID=speciesID
-    row.quadkey=getQuadKey(coord[0],coord[1])
-    row.mx = coord[0]
-    row.my = coord[1]
+    row.quadkey=getQuadKey(coord[0],coord[1]) # get the quad key
+    row.mx = coord[0] # populate the x value
+    row.my = coord[1] # populate the y value
+    row.z = coord[2] # populate the attribute, i.e. the status (native, introduced, extinct etc.)
     rows.insertRow(row)
     del row
 del rows
