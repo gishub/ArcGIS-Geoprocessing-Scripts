@@ -15,7 +15,8 @@ def getQuadKey(x,y): # returns the quadkey for the passed tile coordinates, e.g.
 file=arcpy.GetParameterAsText(0)
 arcpy.AddMessage("Processing " + file)
 outputTable=arcpy.GetParameterAsText(1)
-speciesID=file.split("ID")[1][:-4]
+prefix=arcpy.GetParameterAsText(2)
+speciesID=file.split(prefix)[1][:-4]
 data=numpy.load(file) #load the numpy file
 data3d=numpy.reshape(data,(3,len(data)/3)) #convert the numpy file to a 3d array ([x0,x1,xn],[y0,y1,yn],[z0,z1,zn])
 coords=numpy.transpose(data3d) #convert to coordinates ([x0,y0,z0],[x1,y1,z1]..)
