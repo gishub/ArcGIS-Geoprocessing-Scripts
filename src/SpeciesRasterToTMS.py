@@ -34,10 +34,10 @@ try:
                 del arr # delete the full array to free memory
                 if (xy): # if there are xy coordinates - i.e. no memory error
                     #get the tile number for the x coordinate
-                    xy[1].__iadd__(int(math.floor((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+                    xy[1].__iadd__(int((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553)) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
                     #get the tile number for the y coordinate
                     xy[0].__imul__(-1) # y values decrease as you go south
-                    xy[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+                    xy[0].__iadd__(int(((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553)-1)) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
                     #create a new array which is the concatenation of the x indices array, y indices array and the array values
                     outputArr=numpy.concatenate((xy[1],xy[0],values)) # the x and y arrays need to be switched over
                     #output to file

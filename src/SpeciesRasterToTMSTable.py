@@ -33,10 +33,10 @@ try:
         del arr # delete the full array to free memory
         if (data): # if there is data
             #get the tile number for the x coordinate
-            data[1].__iadd__(int(math.floor((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+            data[1].__iadd__(int((desc.Extent.XMin + 20037508.3428) / 1222.9924525618553)) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
             #get the tile number for the y coordinate
             data[0].__imul__(-1) # y values decrease as you go south
-            data[0].__iadd__(int(math.floor((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553))) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
+            data[0].__iadd__(int(((desc.Extent.YMax + 20037508.3428) / 1222.9924525618553)-1)) # 20037508.3428m is the origin shift and 1222.9924525618553m is the cell size
             for i in range(len(data[0])):
                 row=rows.newRow()
                 row.speciesID=speciesID
