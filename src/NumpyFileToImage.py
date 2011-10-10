@@ -24,7 +24,7 @@ def numpyToImage(numpyfile,imagefile):
     f = open(imagefile[:-3] + "tfw",'w') #open the tfw file to write the georeferencing coordinates in
     f.write(str(CELLSIZE) + "\n0.0000000000\n0.0000000000\n-" + str(CELLSIZE) + "\n") #you need to set the y cell size as a minus number otherwise the image is upside down
     topleftx=(minx*CELLSIZE)- OFFSET + (CELLSIZE/2) #get the top left x coordinate
-    toplefty=(maxy*CELLSIZE)- OFFSET - (CELLSIZE/2) #get the top left y coordinate
+    toplefty=(maxy*CELLSIZE)- OFFSET + (CELLSIZE/2) #get the top left y coordinate
     f.write(str(topleftx) + "\n")  #top left x coordinate
     f.write(str(toplefty) + "\n")  #top left y coordinate
     f.close() #close the file
