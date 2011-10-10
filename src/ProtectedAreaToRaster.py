@@ -12,5 +12,5 @@ paFL = arcpy.GetParameterAsText(0)
 outputFile = arcpy.GetParameterAsText(1)
 
 #LOGIC
-arcpy.env.snapRaster = r"E:\cottaan\My Documents\ArcGIS\Default.gdb\SnapGrid"
+arcpy.env.snapRaster = r"E:\cottaan\My Documents\ArcGIS\Default.gdb\SnapGridWebMercator"
 arcpy.PolygonToRaster_conversion(paFL,"wdpaid", outputFile, "MAXIMUM_AREA", PRIORITY_FIELDNAME,"1222.9924525618553") # 1222.9924525618553 is the grid size for zoom level 15 in Web Mercator
