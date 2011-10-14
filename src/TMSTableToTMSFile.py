@@ -14,7 +14,9 @@ for row in rows: #iterate through the rows
     yarr.put(i,row.ty)
     zarr.put(i,row.COUNT_speciesID)    
     i = i + 1
+arcpy.AddMessage("Finished building arrays")
 outputArr=numpy.concatenate((xarr,yarr,zarr)) #join the 3 arrays together 
+arcpy.AddMessage("Finished joining arrays")
 f = open(outputfile,'wb') #write the ndarray out to file
 cPickle.dump(outputArr, f, protocol=2)
 f.close() 
