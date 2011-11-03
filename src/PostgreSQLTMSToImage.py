@@ -15,7 +15,7 @@ arcpy.AddMessage("Number records: " + str(len(rows)))
 rows=cur.fetchall()
 t1=time.time()
 arcpy.AddMessage("Records returned: " + str(t1-t0) + "ms")
-data3d=numpy.transpose(numpy.array(rows))
+data3d=numpy.transpose(numpy.array(rows,dtype="int32"))
 t2=time.time()
 arcpy.AddMessage("Transposed: " + str(t2-t1) + "ms")
 minx=min(data3d[0]) #get the minx value
