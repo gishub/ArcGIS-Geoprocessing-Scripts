@@ -18,4 +18,4 @@ for row in rows:
         newRow.wdpaid = pa.wdpaid
         insertCursor.insertRow(newRow)
     del newRow
-    arcpy.AddMessage(row.BINOMIAL + " (" + str(i) + " out of " + str(rowCount) + ")")
+    arcpy.AddMessage(row.BINOMIAL + " (" + str(i) + " out of " + str(rowCount) + ") (" + str(datetime.datetime.now()) + ")")
