@@ -10,11 +10,13 @@ arcpy.AddField_management(outputTable, "wdpaid", "LONG")
 insertCursor = arcpy.InsertCursor(outputTable)
 rows = arcpy.SearchCursor(speciesLayer)
 rowCount = arcpy.GetCount_management(speciesLayer)
+arcpy.AddMessage(str(rowCount) + " species to process")
 i = 0
 start = True
+#start = False
 for row in rows:
     i = i + 1
-#    if (row.ID_NO == '4310'): # can be used to start the code at a particular ID_NO again if it crashes 
+#    if (row.ID_NO == '11933'): # can be used to start the code at a particular ID_NO again if it crashes 
 #        start = True
     if (start == True):
         arcpy.AddMessage("Processing: " + row.ID_NO + "\t" + row.BINOMIAL + " (" + str(i) + " out of " + str(rowCount) + ") (" + str(datetime.datetime.now()) + ")")
@@ -29,5 +31,3 @@ for row in rows:
         del newRow
     else:
         arcpy.AddMessage("Skipping: " + row.ID_NO + "\t" + row.BINOMIAL + " (" + str(i) + " out of " + str(rowCount) + ") (" + str(datetime.datetime.now()) + ")")
-    
-    

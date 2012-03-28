@@ -4,21 +4,22 @@ from scipy.sparse import *
 CELLSIZE = 1222.9924525618553 #cell size at zoom 15
 OFFSET = 20037508.3428        #offset for the web mercator projection
 def numpyToImage(numpyfile,imagefile):
-    data=numpy.load(numpyfile) #load the numpy data (this will be in a single array of form x0,..xn,y0..yn,z0..zn
-    data3d=numpy.reshape(data,(3,len(data)/3)) #convert it to a 3d array of form [y0,yn][x0,xn][z0,zn]
+    arcpy.AddMessage("wibble")
+    data3d=numpy.load(numpyfile) #load the numpy data (this will be in a single array of form x0,..xn,y0..yn,z0..zn
+#    data3d=numpy.reshape(data,(3,len(data)/3)) #convert it to a 3d array of form [y0,yn][x0,xn][z0,zn] - updated the zipping routines to zip to a 3d array to begin with
     minx=min(data3d[0]) #get the minx value
     maxx=max(data3d[0]) #get the maxx value
     miny=min(data3d[1]) #get the miny value
     maxy=max(data3d[1]) #get the maxy value
-#    arcpy.AddMessage("minx:" + str(minx) + " maxx:" + str(maxx) + " miny:" + str(miny) + " maxy:" + str(maxy))
+    arcpy.AddMessage("minx:" + str(minx) + " maxx:" + str(maxx) + " miny:" + str(miny) + " maxy:" + str(maxy))
     width=maxx-minx+1   #get the width of the resulting image
     height=maxy-miny+1  #get the height of the resulting image
-#    arcpy.AddMessage("width:" + str(width) + " height:" + str(height))
+    arcpy.AddMessage("width:" + str(width) + " height:" + str(height))
     data3d[0].__isub__(minx) #change the x values to be zero based by subtracting the minx value
     data3d[1].__imul__(-1)   #do the same with the y values using a different calculation
     data3d[1].__iadd__(maxy)
     pixels=coo_matrix((data3d[2],(data3d[1],data3d[0])), shape=(height,width)).todense() #convert the sparse array into a dense matrix, i.e. by adding in all of the zero values
-#    arcpy.AddMessage(pixels)
+    arcpy.AddMessage(pixels)
     image = Image.fromarray(pixels) #create the output tif from the pixel values
     image.save(imagefile) #save the image to a file
     f = open(imagefile[:-3] + "tfw",'w') #open the tfw file to write the georeferencing coordinates in
