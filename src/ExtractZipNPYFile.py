@@ -19,7 +19,7 @@ objtype = 1 #species
 gzipFileHandle = gzip.open(gzipFileName, 'rb')
 (drive, tail) = os.path.split(gzipFileName)
 speciesId = tail.split(".")[0].split("/")[-1]
-while 1:
+while 1: 
     try:
         gzipUnpickledArray = cPickle.load(gzipFileHandle) # array is a 3d array of the form [x0,x1,xn],[y0,y1,yn],[z0,z1,zn]
         coords = numpy.transpose(gzipUnpickledArray) #convert to an array in coordinate form ([x0,y0,z0],[x1,y1,z1]..)
