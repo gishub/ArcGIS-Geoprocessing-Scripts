@@ -12,7 +12,7 @@ if __name__ == '__main__':
     f = open(r"E:\cottaan\My Documents\ArcGIS\wdpa_iucn.csv", 'a')
     for row in rows:
 #        cursor2.execute("SELECT * FROM species WHERE id_no = '" + str(row[0]) + "'")
-        cursor2.execute("select distinct species.id_no,wdpaid from wdpa, species where st_intersects(species.geom, wdpa.geom) and species.id_no='" + str(row[0]) + "' order by 1")
+        cursor2.execute("select distinct species.id_no,wdpaid from wdpa, species where st_intersects(species.geom, wdpa.geom) and species.id_no='" + str(row[0]))
         species = cursor2.fetchall()
         for s in species:
             f.write(str(s[0]).strip() + "," + str(int(s[1])).strip() + "\n")
