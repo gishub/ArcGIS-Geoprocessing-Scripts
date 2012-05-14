@@ -1,6 +1,7 @@
 import psycopg2, gzip, datetime
-DSN = "dbname='dbdopa' user='usrdopa' host='durga.jrc.org' password='W25e12b'"
+#DSN = "dbname='dbdopa' user='usrdopa' host='durga.jrc.org' password='W25e12b'"
 #DSN = "dbname='dopa' user='arcuser' host='species.jrc.it' password='Cy63rmn'"
+DSN = "dbname='dev' user='appuser' host='species.jrc.it' password='5Ti5k9'"
 
 if __name__ == '__main__':
     conn = psycopg2.connect(DSN)
@@ -12,13 +13,14 @@ if __name__ == '__main__':
     f = open(r"E:\cottaan\My Documents\ArcGIS\wdpa_iucn.csv", 'a')
     for row in rows:
 #        cursor2.execute("SELECT * FROM species WHERE id_no = '" + str(row[0]) + "'")
-        cursor2.execute("select distinct species.id_no,wdpaid from wdpa, species where st_intersects(species.geom, wdpa.geom) and species.id_no='" + str(row[0]))
+        sql = "select distinct species.id_no,wdpaid from wdpa, species where st_intersects(species.geom, wdpa.geom) and species.id_no='" + str(row[0]) + "'"
+        print str(datetime.datetime.now()) + "\t" + str(count)+ "\t" + sql
+        cursor2.execute(sql)
         species = cursor2.fetchall()
         for s in species:
             f.write(str(s[0]).strip() + "," + str(int(s[1])).strip() + "\n")
-        print str(datetime.datetime.now()) + "\t" + str(count)
         count += 1
-#        if count == 4: 
+#        if count == 40: 
 #            break
     f.close()
     cursor2.close()                                                      # close the cursor to get the species
