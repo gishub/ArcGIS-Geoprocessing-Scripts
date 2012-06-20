@@ -1,12 +1,10 @@
-import psycopg2, gzip, datetime
-#DSN = "dbname='dbdopa' user='usrdopa' host='durga.jrc.org' password='W25e12b'"
-#DSN = "dbname='dopa' user='arcuser' host='species.jrc.it' password='Cy63rmn'"
-DSN = "dbname='dev' user='appuser' host='species.jrc.it' password='5Ti5k9'"
+import gzip, datetime
+from dbconnect import dbconnect
 
 if __name__ == '__main__':
-    conn = psycopg2.connect(DSN)
-    cursor = conn.cursor()
-    cursor2 = conn.cursor()
+    conn = dbconnect('species_dev')
+    cursor = conn.cur
+    cursor2 = conn.cur
     cursor.execute("SELECT DISTINCT id_no::int FROM species WHERE id_no != ' '")
     rows = cursor.fetchall()
     count = 1
@@ -25,4 +23,4 @@ if __name__ == '__main__':
     f.close()
     cursor2.close()                                                      # close the cursor to get the species
     cursor.close()                                                      # close the cursor to get the species
-    conn.close()                                                        # close the connection to the database
+    conn.conn.close()                                                        # close the connection to the database

@@ -1,11 +1,11 @@
 #This uses psycopg2 to access the Postgresql database rather than the esri cursor on a file gdb table
-import psycopg2
 import cPickle
 import numpy
 import arcpy
+from dbconnect import dbconnect
 speciesID=arcpy.GetParameterAsText(0)
-conn = psycopg2.connect(host="durga.jrc.org", database="dbdopa", user="usrdopa", password="W25e12b")
-cur = conn.cursor()
+conn = dbconnect('durga_dopa')
+cur = conn.cur
 cur.execute("SELECT tx,ty,z FROM public.pilotspeciesdata WHERE speciesid='" + speciesID + "'")
 rows=cur.fetchall()
 records=numpy.transpose(numpy.array(rows,dtype="int32"))

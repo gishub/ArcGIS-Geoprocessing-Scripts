@@ -1,16 +1,15 @@
-import psycopg2
 import numpy
 import Image
 import arcpy
 from scipy.sparse import *
+from dbconnect import dbconnect
 import time
 t0=time.time()
 CELLSIZE = 1222.9924525618553 #cell size at zoom 15
 OFFSET = 20037508.3428        #offset for the web mercator projection
 speciesID= arcpy.GetParameterAsText(0)
-#conn = psycopg2.connect(host="durga.jrc.org", database="dbdopa", user="usrdopa", password="W25e12b")
-conn = psycopg2.connect(host="damon.jrc.it", database="dbespecies", user="usrespecies", password="gem2011")
-cur = conn.cursor()
+conn = dbconnect('damon_species')
+cur = conn.cur
 cur.execute("SELECT tx,ty,z FROM public.pilotspeciesdata WHERE speciesid in (" + speciesID + ")")
 rows=cur.fetchall()
 arcpy.AddMessage("Number records: " + str(len(rows)))
