@@ -30,10 +30,10 @@ for species in AllSpecies:
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
         filename = "species" + str(id) 
         arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
-        zip = zipfile.ZipFile(filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
-        zip.write(filename + ".json")
+        zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
+        zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
         zip.close()
-        os.remove(filename + ".json")
+        os.remove(OUTPUT_PATH + filename + ".json")
         arcpy.Delete_management(scratchFC)
     else:
         arcpy.AddMessage("No species id found (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
