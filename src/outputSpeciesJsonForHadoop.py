@@ -3,7 +3,7 @@ import arcpy, zipfile, os
 # CONSTANT DECLARATIONS
 SPECIES_TABLE = "SpeciesData"
 EXTENT_FC = "in_memory\\RangesFC"
-OUTPUT_PATH = "E:/cottaan/My Documents/ArcGIS/jsonToFeaturesOutput/"
+OUTPUT_PATH = "E:/cottaan/My Documents/ArcGIS/jsonToFeaturesOutput/zip/"
 
 # INPUT PARAMETERS
 speciesFL = arcpy.GetParameterAsText(0)
@@ -15,7 +15,7 @@ arcpy.AddToolbox(r"E:\cottaan\My Documents\ArcGIS\Toolboxes\geoprocessing-tools-
 
 # CREATE A TABLE OF UNIQUE SPECIES TO ITERATE THROUGH
 arcpy.AddMessage("Creating unique species table")
-arcpy.Frequency_analysis(speciesFL, SPECIES_TABLE, "ID_NO")
+arcpy.Frequency_analysis(speciesFL, SPECIES_TABLE, "speciesid2")
 count = str(arcpy.GetCount_management(SPECIES_TABLE))
 counter = 1
 
@@ -23,10 +23,10 @@ counter = 1
 arcpy.AddMessage("Iterating through species")
 AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
 for species in AllSpecies:
-    id = species.ID_NO    
-    if (id != " "):  # for some reason a NULL is a space in the FREQUENCY table
-        arcpy.AddMessage("Outputting JSON for species " + id + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
-        arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "ID_NO='" + id + "'")
+    id = species.speciesid2    
+    if (id != None):  # for some reason a NULL is a space in the FREQUENCY table
+        arcpy.AddMessage("Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
+        arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
         filename = "species" + str(id) 
         arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
