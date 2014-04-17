@@ -29,7 +29,10 @@ for species in AllSpecies:
         arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
         arcpy.CopyFeatures_management(speciesFL, scratchFC)
         filename = "species" + str(id) 
-        arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
+        try:
+            arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
+        except Exception as e:
+            arcpy.AddError(e.message)
         zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
         zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
         zip.close()
