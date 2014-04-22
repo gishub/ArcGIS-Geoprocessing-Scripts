@@ -26,18 +26,22 @@ for species in AllSpecies:
     id = species.speciesid2    
     if (id != None):  # for some reason a NULL is a space in the FREQUENCY table
         arcpy.AddMessage("Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
-        arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
-        arcpy.CopyFeatures_management(speciesFL, scratchFC)
         filename = "species" + str(id) 
-        try:
-            arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
-        except Exception as e:
-            arcpy.AddError(e.message)
-        zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
-        zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
-        zip.close()
-        os.remove(OUTPUT_PATH + filename + ".json")
-        arcpy.Delete_management(scratchFC)
+        if os.path.isfile(OUTPUT_PATH + filename + ".zip"):
+            arcpy.AddMessage("File " + OUTPUT_PATH + filename + ".zip already exists")
+        else:
+            arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
+            arcpy.CopyFeatures_management(speciesFL, scratchFC)
+            try:
+                arcpy.FeaturesToJSON_hadoop(scratchFC, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
+            except Exception as e:
+                arcpy.AddError(e.message)
+            zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
+            zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
+            zip.close()
+            os.remove(OUTPUT_PATH + filename + ".json")
+            arcpy.Delete_management(scratchFC)
     else:
         arcpy.AddMessage("No species id found (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
     counter = counter + 1
+    break
