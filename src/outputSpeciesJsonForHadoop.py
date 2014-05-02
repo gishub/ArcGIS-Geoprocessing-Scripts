@@ -25,11 +25,11 @@ AllSpecies = arcpy.SearchCursor(SPECIES_TABLE)
 for species in AllSpecies:
     id = species.speciesid2    
     if (id != None):  # for some reason a NULL is a space in the FREQUENCY table
-        arcpy.AddMessage("Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
         filename = "species" + str(id) 
         if os.path.isfile(OUTPUT_PATH + filename + ".zip"):
-            arcpy.AddMessage("File " + OUTPUT_PATH + filename + ".zip already exists")
+            arcpy.AddMessage("File " + OUTPUT_PATH + filename + ".zip already exists - skipping (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
         else:
+            arcpy.AddMessage("Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
             arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
             arcpy.CopyFeatures_management(speciesFL, scratchFC)
             try:
@@ -39,9 +39,8 @@ for species in AllSpecies:
             zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
             zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
             zip.close()
+            del zip
             os.remove(OUTPUT_PATH + filename + ".json")
-            arcpy.Delete_management(scratchFC)
     else:
         arcpy.AddMessage("No species id found (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
     counter = counter + 1
-    break
