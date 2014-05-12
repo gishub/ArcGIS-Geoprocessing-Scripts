@@ -60,7 +60,9 @@ class SummariseClimateData(object):
             if key not in [LATITUDE_DIMENSION_NAME, LONGITUDE_DIMENSION_NAME, TIME_DIMENSION_NAME]:     
                 valueDimensionName = key
                 valueDimensionStandardName = data.variables[valueDimensionName].standard_name.encode("ascii", "ignore")
-        arcpy.AddMessage("Loading NetCDF data for dimension " + valueDimensionStandardName)
+                arcpy.AddMessage("Creating output file geodatabase " + valueDimensionStandardName + ".gdb")
+                arcpy.CreateFileGDB_management("D:/Users/andrewcottam/Documents/ArcGIS/fao", valueDimensionStandardName + ".gdb")
+        arcpy.AddMessage("Loading NetCDF data from " + netCDFFile)
         min_lon = float(data.variables[LONGITUDE_DIMENSION_NAME][0])
         min_lat = float(data.variables[LATITUDE_DIMENSION_NAME][0])
         x_cell_size = float(data.variables[LONGITUDE_DIMENSION_NAME][1]) - min_lon
@@ -68,12 +70,12 @@ class SummariseClimateData(object):
         yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
         for item in yearlyIndices:
             arcpy.AddMessage("Producing mean for " + str(item["year"]))
-            outputname = valueDimensionStandardName + "_y" + str(item["year"])
+            outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + str(item["year"])
             self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
         monthlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "month")
         for item in monthlyIndices:
             arcpy.AddMessage("Producing mean for " + calendar.month_name[item["month"]] + " " + str(item["year"]))
-            outputname = valueDimensionStandardName + "_y" + str(item["year"]) + "_m" + str(item["month"]).zfill(2)
+            outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + str(item["year"]) + "_m" + str(item["month"]).zfill(2)
             self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
         return
 
@@ -101,8 +103,10 @@ class SummariseClimateData(object):
     def writeSlice(self, values, startIndex, endIndex, min_lon, min_lat, x_cell_size, y_cell_size, outputname):
         slice = self.getSlice(values, startIndex, endIndex)
         raster = arcpy.NumPyArrayToRaster(slice, arcpy.Point(min_lon - (x_cell_size / 2), min_lat - (y_cell_size / 2)), x_cell_size, y_cell_size, NO_DATA_VALUE)
-        arcpy.DefineProjection_management(raster, "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]]")
-        raster.save("D:/Users/andrewcottam/Documents/ArcGIS/fao/New File Geodatabase.gdb/" + outputname)
+        raster.save(outputname)
+        sr = arcpy.SpatialReference(4326)
+        arcpy.DefineProjection_management(raster, sr)
+        arcpy.ImportMetadata_conversion(r"D:\Users\andrewcottam\Documents\ArcGIS\fao\metadata.xml", "FROM_ISO_19139", raster, "ENABLED")
 
     def getSlice(self, variable, startIndex, endIndex):
         slice = numpy.mean(variable[startIndex:endIndex, :, :], 0).filled(NO_DATA_VALUE)
