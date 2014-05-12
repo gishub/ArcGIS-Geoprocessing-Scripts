@@ -1,19 +1,18 @@
 # Iterates through species range data and outputs each unique species to a json file ready for import into Apache Hadoop
 # THIS MODULE HAS MEMORY LEAKS!
-import  zipfile, os
+import  zipfile, os, arcpy
 
 def createSpeciesJson(id, filename):
     arcpy.SelectLayerByAttribute_management(speciesFL, "NEW_SELECTION", "speciesid2=" + str(id))
-#     arcpy.CopyFeatures_management(speciesFL, scratchFC)
     try:
         arcpy.FeaturesToJSON_hadoop(speciesFL, OUTPUT_PATH + filename + ".json", "UNENCLOSED_JSON", "FORMATTED")
     except Exception as e:
+        print "Error: " + e.message
         arcpy.AddError(e.message)
     zip = zipfile.ZipFile(OUTPUT_PATH + filename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
     zip.write(OUTPUT_PATH + filename + ".json", filename + ".json")
-    zip.close()
-    del zip
     os.remove(OUTPUT_PATH + filename + ".json")
+    zip.close()
     
 # CONSTANT DECLARATIONS
 SPECIES_TABLE = r"E:\cottaan\My Documents\ArcGIS\jsonToFeaturesOutput\New File Geodatabase.gdb\SpeciesData"
@@ -42,10 +41,13 @@ for species in AllSpecies:
     if (id != None):  # for some reason a NULL is a space in the FREQUENCY table
         filename = "species" + str(id) 
         if os.path.isfile(OUTPUT_PATH + filename + ".zip"):
+            print "File " + OUTPUT_PATH + filename + ".zip already exists - skipping (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")"
             arcpy.AddMessage("File " + OUTPUT_PATH + filename + ".zip already exists - skipping (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
         else:
+            print "Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")"
             arcpy.AddMessage("Outputting JSON for species " + str(id) + " (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
             createSpeciesJson(id, filename)
     else:
+        print "No species id found (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")"
         arcpy.AddMessage("No species id found (" + str(counter) + " of " + count + ") (" + str(datetime.datetime.now()) + ")")
     counter = counter + 1
