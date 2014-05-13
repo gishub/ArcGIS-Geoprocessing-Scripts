@@ -67,11 +67,16 @@ class SummariseClimateData(object):
         min_lat = float(data.variables[LATITUDE_DIMENSION_NAME][0])
         x_cell_size = float(data.variables[LONGITUDE_DIMENSION_NAME][1]) - min_lon
         y_cell_size = float(data.variables[LATITUDE_DIMENSION_NAME][1]) - min_lat
-        yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
-        for item in yearlyIndices:
-            arcpy.AddMessage("Producing mean for " + str(item["year"]))
-            outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + str(item["year"])
+        decadalindices = self.getDecadalSliceIndices()
+        for item in decadalindices:
+            arcpy.AddMessage("Producing mean for decade " + item["label"])
+            outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + item["label"]
             self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
+#         yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
+#         for item in yearlyIndices:
+#             arcpy.AddMessage("Producing mean for " + str(item["year"]))
+#             outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + str(item["year"])
+#             self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
         monthlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "month")
         for item in monthlyIndices:
             arcpy.AddMessage("Producing mean for " + calendar.month_name[item["month"]] + " " + str(item["year"]))
@@ -99,6 +104,20 @@ class SummariseClimateData(object):
                 continue
             break
         return indices[:i + 1]
+    
+    def getDecadalSliceIndices(self):
+        indices = []
+        index1 = date(2010, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        index2 = date(2020, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        index3 = date(2030, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        index4 = date(2040, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        index5 = date(2050, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        index6 = date(2060, 1, 1).toordinal() - date(START_YEAR, 1, 1).toordinal()
+        indices.append({"year" : 2020, "start" : index1, "end":index2,"label":"2010-2020"})
+        indices.append({"year" : 2030, "start" : index2, "end":index4,"label":"2020-2040"})
+        indices.append({"year" : 2040, "start" : index3, "end":index5,"label":"2030-2050"})
+        indices.append({"year" : 2050, "start" : index4, "end":index6,"label":"2040-2060"})
+        return indices
     
     def writeSlice(self, values, startIndex, endIndex, min_lon, min_lat, x_cell_size, y_cell_size, outputname):
         slice = self.getSlice(values, startIndex, endIndex)
