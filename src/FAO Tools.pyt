@@ -1,4 +1,4 @@
-import netCDF4, arcpy, numpy, calendar, zipfile,os, glob
+import netCDF4, arcpy, numpy, calendar, zipfile, os, glob, gzip, subprocess
 from netCDF4 import Dataset
 from datetime import date
 LATITUDE_DIMENSION_NAME = "lat"
@@ -6,6 +6,8 @@ LONGITUDE_DIMENSION_NAME = "lon"
 TIME_DIMENSION_NAME = "time"
 NO_DATA_VALUE = -1
 START_YEAR = 1960
+START_TEXT = "Extracting  "
+END_TEXT = "Everything"
 BASE_PATH = "D:/Users/andrewcottam/Documents/ArcGIS/fao/"
 
 class Toolbox(object):
@@ -28,15 +30,26 @@ class SummariseClimateData(object):
     def getParameterInfo(self):
         """Define parameter definitions"""
         param0 = arcpy.Parameter(
-            displayName="Input NetCDF file",
+            displayName="Input NetCDF files",
             name="in_filename",
             datatype="DEFile",
             parameterType="Required",
             direction="Input",
             multiValue=True)
-        param0.filter.list = ["nc"]
-        param0.value = BASE_PATH + "FAO Climate Data/somds.wfdei.cmip5.rcp85.CanESM2.daily.pr.africa.nc"
-        params = [param0]
+        param0.filter.list = ["gz"]
+        param1 = arcpy.Parameter(
+            displayName="Delete gz file after analysis",
+            name="deletegz",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
+        param2 = arcpy.Parameter(
+            displayName="Delete NetCDF file after analysis",
+            name="deletenetcdf",
+            datatype="GPBoolean",
+            parameterType="Required",
+            direction="Input")
+        params = [param0, param1, param2]
         return params
 
     def isLicensed(self):
@@ -56,9 +69,11 @@ class SummariseClimateData(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        netCDFFiles = parameters[0].valueAsText.split(";")
-        for file in netCDFFiles:
-            netCDFFile = file[1:-1]
+        gzfiles = parameters[0].valueAsText.split(";")
+        deletegz = parameters[1].valueAsText
+        deletenetcdf = parameters[2].valueAsText
+        for gzfile in gzfiles:
+            netCDFFile = self.unzipGZFile(gzfile[1:-1], BASE_PATH + "Input data/", deletegz == "true")
             data = Dataset(netCDFFile)
             for key in data.variables:
                 if key not in [LATITUDE_DIMENSION_NAME, LONGITUDE_DIMENSION_NAME, TIME_DIMENSION_NAME]:     
@@ -66,37 +81,41 @@ class SummariseClimateData(object):
                     valueDimensionStandardName = data.variables[valueDimensionName].standard_name.encode("ascii", "ignore")
     #                 arcpy.AddMessage("Creating output file geodatabase " + valueDimensionStandardName + ".gdb")
     #                 arcpy.CreateFileGDB_management("D:/Users/andrewcottam/Documents/ArcGIS/fao", valueDimensionStandardName + ".gdb")
-            arcpy.AddMessage("Loading " + valueDimensionStandardName + " data from " + netCDFFile)
+            arcpy.AddMessage("Loading " + valueDimensionStandardName + " data from " + os.path.basename(netCDFFile))
             min_lon = float(data.variables[LONGITUDE_DIMENSION_NAME][0])
             min_lat = float(data.variables[LATITUDE_DIMENSION_NAME][0])
             x_cell_size = float(data.variables[LONGITUDE_DIMENSION_NAME][1]) - min_lon
             y_cell_size = float(data.variables[LATITUDE_DIMENSION_NAME][1]) - min_lat
-            decadalindices = self.getDecadalSliceIndices()
             zipfilename = netCDFFile.split(".")[4] + "_" + netCDFFile.split(".")[6]
             rootfilename = BASE_PATH + "Output data/" + zipfilename
+            decadalindices = self.getDecadalSliceIndices()
             for item in decadalindices:
                 arcpy.AddMessage("Producing mean for decade " + item["label"])
                 outputname = rootfilename + "_yy" + item["label"] + ".tif"
+                self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
+            yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
+            for item in yearlyIndices:
+                arcpy.AddMessage("Producing mean for " + str(item["year"]))
+                outputname = rootfilename + "_y" + str(item["year"]) + ".tif"
                 self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
             monthlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "month")
             for item in monthlyIndices:
                 arcpy.AddMessage("Producing mean for " + calendar.month_name[item["month"]] + " " + str(item["year"]))
                 outputname = rootfilename + "_y" + str(item["year"]) + "_m" + str(item["month"]).zfill(2) + ".tif"
                 self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
-    #         yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
-    #         for item in yearlyIndices:
-    #             arcpy.AddMessage("Producing mean for " + str(item["year"]))
-    #             outputname = "D:/Users/andrewcottam/Documents/ArcGIS/fao/" + valueDimensionStandardName + ".gdb/" + valueDimensionStandardName + "_y" + str(item["year"])
-    #             self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
             arcpy.AddMessage("Zipping folder..")
             self.zipFolder(zipfilename)
+            data.close()
+            if deletenetcdf == "true":
+                os.remove(netCDFFile)
         return
 
     def zipFolder(self, zipfilename):
         zip = zipfile.ZipFile(BASE_PATH + "Output Zips/" + zipfilename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
-        files=glob.glob(BASE_PATH + "Output data/" + zipfilename + "*")
+        files = glob.glob(BASE_PATH + "Output data/" + zipfilename + "*")
         for file in files:
             zip.write(file , os.path.basename(file))
+            os.remove(file)
         zip.close()
         
     def getSliceIndices(self, timeArray, groupBy):
@@ -146,4 +165,20 @@ class SummariseClimateData(object):
         slice = numpy.mean(variable[startIndex:endIndex, :, :], 0).filled(NO_DATA_VALUE)
         flippedSlice = numpy.flipud(slice)
         return flippedSlice
-        
+    
+    def unzipGZFile(self, gzfile, outputfolder, deleteZipfile):
+        arcpy.AddMessage("Unzipping " + gzfile + "..")
+        p = subprocess.Popen('7z e "' + gzfile + '" -o"' + outputfolder + '" -aos', stdout=subprocess.PIPE)
+        result = p.communicate()[0]
+        pos = result.find(START_TEXT)
+        if pos > -1:
+            extractedFilename = result[pos + len(START_TEXT):result.find(END_TEXT) - 4]
+            extractedFilename = outputfolder + os.path.basename(extractedFilename)  # to force the file name to have / slashes in its path
+            arcpy.AddMessage(extractedFilename + " unzipped")
+        else:
+            extractedFilename = outputfolder + os.path.basename(gzfile[1:-3])
+            arcpy.AddMessage(extractedFilename + " already exists - skipping")
+        if deleteZipfile:
+            os.remove(gzfile)
+            arcpy.AddMessage(gzfile + " deleted")
+        return extractedFilename
