@@ -1,33 +1,25 @@
-import os, arcpy, subprocess
-from netCDF4 import Dataset
-BASE_PATH = "D:/Users/andrewcottam/Documents/ArcGIS/fao/"
-START_TEXT = "Extracting  "
-END_TEXT = "Everything"
-def unzipGZFile(gzfile, outputfolder, deleteZipfile):
-    arcpy.AddMessage("Unzipping " + gzfile + "..")
-    p = subprocess.Popen('7z e "' + gzfile + '" -o"' + outputfolder + '" -aos', stdout=subprocess.PIPE)
-    result = p.communicate()[0]
-    pos = result.find(START_TEXT)
-    if pos > -1:
-        extractedFilename = result[pos + len(START_TEXT):result.find(END_TEXT) - 4]
-        arcpy.AddMessage(extractedFilename + " unzipped")
-    else:
-        extractedFilename = outputfolder + os.path.basename(gzfile[1:-3])
-        arcpy.AddMessage(extractedFilename + " already exists - skipping")
-    if deleteZipfile:
-        os.remove(gzfile)
-        arcpy.AddMessage(gzfile + " deleted")
-    return extractedFilename
+import win32com.client, os
+from ftplib import FTP
+FTP_ROOT = 'ftp.bgc-jena.mpg.de'
+UNZIP_FOLDER = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Data/"
 
-gzfiles = [u"'D:\\Users\\andrewcottam\\Downloads\\FAO Climate Data Zipped\\ClimAf_1_1960-2100_lpjg_can_wfdei_somd_B1_etotx_sea_tera_ir.nc.gz'"]
-for gzfile in gzfiles:
-    unzipGZFile(gzfile[1:-1], BASE_PATH + "Input data/", True)
-    netCDFFile = BASE_PATH + "Input data/" + os.path.basename(gzfile[1:-4])
-    try:
-        data = Dataset(netCDFFile)
-    except (RuntimeError) as e:
-        arcpy.AddError("Unable to load " + netCDFFile + ": " + e.message) 
-        pass
-        
-# os.system('7z e "D:/Users/andrewcottam/Downloads/FAO Climate Data Zipped/somds.wfdei.cmip5.rcp85.GFDL-ESM2M.daily.clt.africa.nc.gz" -o"D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Data/"')
-# os.system('7z e "D:/Users/andrewcottam/Downloads/FAO Climate Data Zipped/somds.wfdei.cmip5.rcp85.GFDL-ESM2M.daily.clt.africa.nc.gz" -o"D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Data/"')
+def GetFile(ftpRelativeFilename):
+    filename = os.path.basename(ftpRelativeFilename)
+    localFilename = UNZIP_FOLDER + filename
+    ftp.retrbinary('RETR %s' % ftpRelativeFilename, open(localFilename, 'wb').write)
+    return localFilename
+    
+ftp = FTP(FTP_ROOT)
+ftp.login()
+engine = win32com.client.Dispatch('DAO.DBEngine.120')
+db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
+table = db.TableDefs("required files lpjg").OpenRecordset()
+counter = 1
+while not table.EOF:
+    ftpFullFilename = str(table.fullPath)
+    ftpRelativeFilename = ftpFullFilename[ftpFullFilename.find("/"):]
+    filename = GetFile(ftpRelativeFilename)
+    print "'" + os.path.basename(filename) + "' copied from '" + ftpFullFilename + "'"
+    table.MoveNext()
+    break 
+db.Close()

@@ -1,0 +1,7 @@
+open ftp.bgc-jena.mpg.de/pub/outgoing/ClimAfrica/Results/LPJg/SOMD/
+username
+password
+cd public_html
+dir
+get file.txt
+bye	
