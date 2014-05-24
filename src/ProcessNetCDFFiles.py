@@ -8,13 +8,12 @@ NO_DATA_VALUE = -1
 OUTPUT_DATA_LTA = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Output Data LTA/"
 OUTPUT_ZIPS = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Output Zips/"
 
-def zipFolder(zipfilename, deleteFiles=False):
+def zipFolder(zipfilename):
     zip = zipfile.ZipFile(OUTPUT_ZIPS + zipfilename + ".zip", "w", zipfile.ZIP_DEFLATED, True)
     files = glob.glob(OUTPUT_DATA_LTA + zipfilename + "*")
     for file in files:
         zip.write(file , os.path.basename(file))
-        if deleteFiles:
-            os.remove(file)
+        os.remove(file)
     zip.close()
 
 def writeSlices(values, slices, min_lon, min_lat, x_cell_size, y_cell_size, filename):
@@ -36,7 +35,7 @@ def writeSlices(values, slices, min_lon, min_lat, x_cell_size, y_cell_size, file
         arcpy.DefineProjection_management(raster, sr)
 
 def GetNetCDFOrdinals(data, startDate):
-    '''Returns an array of proleptic gregrian dates for the passed netcdf'''
+    '''Returns an array of proleptic gregorian dates for the passed netcdf'''
     t = data.variables['time']
     if t.size == 0:
         return ""
@@ -52,19 +51,19 @@ def GetNetCDFOrdinals(data, startDate):
 def GetDateBins(dateFrom, dateTo, dateInterval):
     '''Gets DateBins from the start date to the end date - including the end date'''
     diff = relativedelta(dateTo, dateFrom)
-    if dateInterval == "day":
+    if dateInterval == "day": #bins for daily data
         totaldays = ((d2 - d1).days) + 1
         dates = [dateFrom + relativedelta(days=i) for i in range(totaldays)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year) + "_d" + d.strftime("%j")} for d in dates]
-    elif dateInterval == "month":
+    elif dateInterval == "month":#bins for monthly data
         totalmonths = (diff.years * 12 + diff.months) + 1
         dates = [dateFrom + relativedelta(months=i) for i in range(totalmonths)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year) + "_m" + str(d.month).zfill(2)} for d in dates]
-    elif dateInterval == "year":
+    elif dateInterval == "year":#bins for yearly data
         totalyears = diff.years + 1
         dates = [dateFrom + relativedelta(years=i) for i in range(totalyears)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year)} for d in dates]
-    elif dateInterval[:3] == "lta":
+    elif dateInterval[:3] == "lta":#bins for long-terma average data
         interval = int(dateInterval[3:])
         totalCount = (diff.years / interval) + 1
         dates = [dateFrom + relativedelta(years=(i * interval)) for i in range(totalCount)]
@@ -122,24 +121,33 @@ def GetVariables(data):
 def ProcessFile(file, frequency):
     logging.basicConfig(filename=r"D:\Users\andrewcottam\Documents\ArcGIS\fao\processing.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     arcpy.env.overwriteOutput = True
+    #get the filename of the netcdf file
     filename = os.path.basename(file)
     logging.info("Processing:\t'" + filename + "' for " + frequency + " intervals")
     print "Processing:\t'" + filename + "' for " + frequency + " intervals"
+    #load the netcdf file into memory
     data = Dataset(file)
+    #get the names of all of the variables
     variableNames = GetVariables(data)
     logging.info("\t\t" + str(variableNames))
     print "\t\t" + str(variableNames)
+    #get the number of slices of time in the data
     slices = int(data.variables[variableNames['timeName']].size)
     logging.info("\t\tTime slices: " + str(slices))
     print "\t\tTime slices: " + str(slices)
     logging.info("\t\tTime units (from NetCDF metadata): " + data.variables[variableNames['timeName']].units)
     print "\t\tTime units (from NetCDF metadata): " + data.variables[variableNames['timeName']].units
     logging.info("Slicing:\t")
+    #slice the data into the required slices
     print "Slicing:\t"
+    #set the range of the required slices
     d1 = datetime.datetime(1960, 1, 1)
     d2 = datetime.datetime(2100 , 1, 1)
+    #output the slices - the filename is of the form 'ClimAf_1_1960-2100_lpjg_can_wfdei_somd_B1_etotx_sea_tera_ir.nc' and is a stub for the output zip
     OutputSlices(data, variableNames, d1, d2, frequency, filename)
+    #close the netcdf file
     data.close()
+    #zip all files that match the filename pattern in a single zip
     zipFolder(filename[:-4])
 
 if __name__ == "__main__":
