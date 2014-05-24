@@ -3,7 +3,7 @@ from ftplib import FTP
 FTP_ROOT = 'ftp.bgc-jena.mpg.de'
 INPUT_ZIPS = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Zips/"
 
-def GetFTPFile(ftpFullFilename):
+def GetFTPFile(ftpFullFilename): #gets an ftp file from the server
     '''retrieves an ftp file from a server'''
     ftpRelativeFilename = ftpFullFilename[ftpFullFilename.find("/"):]
     filename = os.path.basename(ftpRelativeFilename)
@@ -22,21 +22,24 @@ def GetFTPFile(ftpFullFilename):
             pass
         print "\t\tSucceeded"
     return 
-ftp = FTP(FTP_ROOT)
-ftp.login()
-engine = win32com.client.Dispatch('DAO.DBEngine.120')
-db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
-queryDef = db.CreateQueryDef("", "select distinct fullPath from [required files] ")
-table = queryDef.OpenRecordset()
-total = table.RecordCount
-counter = 1
-while not table.EOF:
-    ftpFullFilename = str(table.fullPath)
-    GetFTPFile(ftpFullFilename)
-    table.MoveNext()
-    counter = counter + 1 
-    print str(counter) + " out of " + str(total)
-db.Close()
-ftp.quit()
-ftp.close()
 
+def GetFTPFiles(): #iterates through the ftp files in the table and gets them from the ftp server
+    ftp = FTP(FTP_ROOT)
+    ftp.login()
+    engine = win32com.client.Dispatch('DAO.DBEngine.120')
+    db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
+    queryDef = db.CreateQueryDef("", "select distinct fullPath from [required files] ")
+    table = queryDef.OpenRecordset()
+    total = table.RecordCount
+    counter = 1
+    while not table.EOF:
+        ftpFullFilename = str(table.fullPath)
+        GetFTPFile(ftpFullFilename)
+        table.MoveNext()
+        counter = counter + 1 
+        print str(counter) + " out of " + str(total)
+    db.Close()
+    ftp.quit()
+    ftp.close()
+
+GetFTPFiles()
