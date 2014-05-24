@@ -11,14 +11,19 @@ END_TEXT = "Everything"
 def GetFTPFile(ftpFullFilename):
     '''retrieves an ftp file from a server'''
     ftpRelativeFilename = ftpFullFilename[ftpFullFilename.find("/"):]
-    print "\n========================================================================================================================="
-    print "Getting file:\t'.." + ftpFullFilename[15:] + "'"
+    print "\n================================================================================================================================="
+    print "Getting file:\t'.." + ftpFullFilename[19:] + "'"
     filename = os.path.basename(ftpRelativeFilename)
     localFilename = INPUT_ZIPS + filename
     if os.path.exists(localFilename):
         print "\t\tAlready exists - skipping" 
     else:
-        ftp.retrbinary('RETR %s' % ftpRelativeFilename, open(localFilename, 'wb').write)
+        try:
+            ftp.retrbinary('RETR %s' % ftpRelativeFilename, open(localFilename, 'wb').write)
+        except (Exception) as e:
+            print e
+            pass
+            
         print "\t\tSucceeded"
     return localFilename
 
@@ -50,7 +55,8 @@ ftp.login()
 engine = win32com.client.Dispatch('DAO.DBEngine.120')
 db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
 # table = db.TableDefs("required files lpjg").OpenRecordset()
-queryDef = db.CreateQueryDef("", 'select distinct fullPath, frequency from [required files] where model<>"climate" and frequency="lta"')
+# queryDef = db.CreateQueryDef("", 'select distinct fullPath, frequency from [required files] where model<>"climate" and frequency="lta"')
+queryDef = db.CreateQueryDef("", "select distinct fullPath, frequency from [required files] where model<>'climate' and frequency='lta' and fullpath like '*harea*'")
 table = queryDef.OpenRecordset()
 counter = 1
 while not table.EOF:
