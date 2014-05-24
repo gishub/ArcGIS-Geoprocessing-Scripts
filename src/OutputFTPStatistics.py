@@ -1,5 +1,5 @@
-import struct, gzip, glob
-from gzip import FEXTRA, FNAME
+import win32com.client, struct, gzip, glob, logging
+from gzip import FEXTRA, FNAME, os
 INPUT_ZIPS = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Zips/"
 # INPUT_ZIPS = "/Users/andrewcottam/Desktop/"
 
@@ -34,8 +34,39 @@ def read_gzip_info(gzipfile):
     gf.seek(pos)
     return ''.join(fname), size
 
+logging.basicConfig(filename=r"D:\Users\andrewcottam\Documents\ArcGIS\fao\OutputFTPStatistics.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+engine = win32com.client.Dispatch('DAO.DBEngine.120')
+db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
+q = db.CreateQueryDef("","DELETE DownloadedZipFiles.* FROM DownloadedZipFiles;")
+q.Execute()
+queryDef = db.CreateQueryDef("", "select *from DownloadedZipFiles")
+r = queryDef.OpenRecordset()
 files = glob.glob(INPUT_ZIPS + "*.gz")
+total = len(files)
+counter = 1
 for file in files:
-    f = gzip.open(file)
-    print read_gzip_info(f)
-
+    filename = os.path.basename(file)
+    filesize = os.path.getsize(file)
+    print "processing " + filename + " (" + str(counter) + "/" + str(total) + ")"
+    if filesize == 0:
+        print filename + " has a file size of 0 bytes"
+        logging.error(filename + " has a file size of 0 bytes")
+        archivename, archivesize = "", 0
+    else:
+        f = gzip.open(file)
+        archivename, archivesize = read_gzip_info(f)
+    try:
+        r.AddNew()
+        r.Fields['fullpath'] = file
+        r.fields['filename'] = filename
+        r.fields['filesize'] = float(filesize) #must explicitly case to a float otherwise it passes as an int and gives errors
+        r.fields['archivename'] = archivename
+        r.fields['archivesize'] = float(archivesize)
+        r.Update()
+        counter = counter + 1
+    except (Exception)as e:
+        print e
+        logging.error("Error on file " + filename + " filesize: " + str(filesize) + " archivename: " + archivename + " archivesize: " + str(archivesize))
+        pass
+db.QueryDefs("UpdateOutputZipFiles").Execute()
+db.Close()

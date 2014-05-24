@@ -58,6 +58,7 @@ db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
 # queryDef = db.CreateQueryDef("", 'select distinct fullPath, frequency from [required files] where model<>"climate" and frequency="lta"')
 queryDef = db.CreateQueryDef("", "select distinct fullPath, frequency from [required files] where model<>'climate' and frequency='lta' and fullpath like '*harea*'")
 table = queryDef.OpenRecordset()
+r = queryDef.openrecordset()
 counter = 1
 while not table.EOF:
     ftpFullFilename = str(table.fullPath)
