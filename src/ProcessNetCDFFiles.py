@@ -17,10 +17,10 @@ def zipFolder(zipfilename):
     zip.close()
 
 def writeSlices(values, slices, min_lon, min_lat, x_cell_size, y_cell_size, filename):
+    outputFiles = []
     for slice in slices:  
         if values.ndim < 3:
             logging.error("\t\tValue dimensions are <3")
-            print "\t\tValue dimensions are <3"
             return      
         if slice['start'] == slice['end']:
             dataSlice = values[slice['start'], :, :].filled(NO_DATA_VALUE)
@@ -29,10 +29,11 @@ def writeSlices(values, slices, min_lon, min_lat, x_cell_size, y_cell_size, file
         raster = arcpy.NumPyArrayToRaster(dataSlice, arcpy.Point(min_lon - (x_cell_size / 2), min_lat - (y_cell_size / 2)), x_cell_size, y_cell_size, NO_DATA_VALUE)
         outputfile = filename[:-3] + slice["label"] + ".tif"
         logging.info("\t\tWriting '" + outputfile + "'")
-        print "\t\tWriting '" + outputfile + "'" 
         raster.save(OUTPUT_DATA_LTA + outputfile)
+        outputFiles.append(OUTPUT_DATA_LTA + outputfile)
         sr = arcpy.SpatialReference(4326)
         arcpy.DefineProjection_management(raster, sr)
+    print outputFiles
 
 def GetNetCDFOrdinals(data, startDate):
     '''Returns an array of proleptic gregorian dates for the passed netcdf'''
@@ -51,19 +52,19 @@ def GetNetCDFOrdinals(data, startDate):
 def GetDateBins(dateFrom, dateTo, dateInterval):
     '''Gets DateBins from the start date to the end date - including the end date'''
     diff = relativedelta(dateTo, dateFrom)
-    if dateInterval == "day": #bins for daily data
+    if dateInterval == "day":  # bins for daily data
         totaldays = ((d2 - d1).days) + 1
         dates = [dateFrom + relativedelta(days=i) for i in range(totaldays)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year) + "_d" + d.strftime("%j")} for d in dates]
-    elif dateInterval == "month":#bins for monthly data
+    elif dateInterval == "month":  # bins for monthly data
         totalmonths = (diff.years * 12 + diff.months) + 1
         dates = [dateFrom + relativedelta(months=i) for i in range(totalmonths)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year) + "_m" + str(d.month).zfill(2)} for d in dates]
-    elif dateInterval == "year":#bins for yearly data
+    elif dateInterval == "year":  # bins for yearly data
         totalyears = diff.years + 1
         dates = [dateFrom + relativedelta(years=i) for i in range(totalyears)]
         dateBins = [{"ordinal":d.toordinal(), "label":"_y" + str(d.year)} for d in dates]
-    elif dateInterval[:3] == "lta":#bins for long-terma average data
+    elif dateInterval[:3] == "lta":  # bins for long-terma average data
         interval = int(dateInterval[3:])
         totalCount = (diff.years / interval) + 1
         dates = [dateFrom + relativedelta(years=(i * interval)) for i in range(totalCount)]
@@ -74,10 +75,8 @@ def OutputSlices(data, variableNames, d1, d2, dateInterval, filename):
     for variableName in variableNames['valueNames']:
         if 'long_name' in dir(data.variables[variableName]):
             logging.info("\t\tProcessing: " + data.variables[variableName].long_name + " (" + variableName + ")")
-            print "\t\tProcessing: " + data.variables[variableName].long_name + " (" + variableName + ")"
         else:
             logging.info("\t\tProcessing: " + variableName)
-            print "\t\tProcessing: " + variableName
         min_lon = min(data.variables[variableNames['lonName']])
         min_lat = min(data.variables[variableNames['latName']])
         x_cell_size = float(data.variables[variableNames['lonName']][1]) - min_lon
@@ -118,38 +117,34 @@ def GetVariables(data):
             valueNames.append(key)
     return {'latName':latName, 'lonName':lonName, 'valueNames':valueNames, 'timeName':TIME_DIMENSION_NAME}
     
-def ProcessFile(file, frequency):
+def ProcessFile(file, frequency, ZipOuput):
     logging.basicConfig(filename=r"D:\Users\andrewcottam\Documents\ArcGIS\fao\processing.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     arcpy.env.overwriteOutput = True
-    #get the filename of the netcdf file
+    # get the filename of the netcdf file
     filename = os.path.basename(file)
     logging.info("Processing:\t'" + filename + "' for " + frequency + " intervals")
-    print "Processing:\t'" + filename + "' for " + frequency + " intervals"
-    #load the netcdf file into memory
+    # load the netcdf file into memory
     data = Dataset(file)
-    #get the names of all of the variables
+    # get the names of all of the variables
     variableNames = GetVariables(data)
     logging.info("\t\t" + str(variableNames))
-    print "\t\t" + str(variableNames)
-    #get the number of slices of time in the data
+    # get the number of slices of time in the data
     slices = int(data.variables[variableNames['timeName']].size)
     logging.info("\t\tTime slices: " + str(slices))
-    print "\t\tTime slices: " + str(slices)
     logging.info("\t\tTime units (from NetCDF metadata): " + data.variables[variableNames['timeName']].units)
-    print "\t\tTime units (from NetCDF metadata): " + data.variables[variableNames['timeName']].units
     logging.info("Slicing:\t")
-    #slice the data into the required slices
-    print "Slicing:\t"
-    #set the range of the required slices
+    # slice the data into the required slices
+    # set the range of the required slices
     d1 = datetime.datetime(1960, 1, 1)
     d2 = datetime.datetime(2100 , 1, 1)
-    #output the slices - the filename is of the form 'ClimAf_1_1960-2100_lpjg_can_wfdei_somd_B1_etotx_sea_tera_ir.nc' and is a stub for the output zip
+    # output the slices - the filename is of the form 'ClimAf_1_1960-2100_lpjg_can_wfdei_somd_B1_etotx_sea_tera_ir.nc' and is a stub for the output zip
     OutputSlices(data, variableNames, d1, d2, frequency, filename)
-    #close the netcdf file
+    # close the netcdf file
     data.close()
-    #zip all files that match the filename pattern in a single zip
-    zipFolder(filename[:-4])
+    # zip all files that match the filename pattern in a single zip
+    if ZipOuput == "true":
+        zipFolder(filename[:-4])
 
 if __name__ == "__main__":
     args = sys.argv
-    ProcessFile(args[1], args[2])
+    ProcessFile(args[1], args[2], args[3])  # third argument controls what is done with the results - True will zip them and delete intermediates, False will leave intermediates and not zip them
