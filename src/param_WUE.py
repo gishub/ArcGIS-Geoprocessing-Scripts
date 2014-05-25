@@ -22,23 +22,28 @@ def CreateNetCDF(yieldNetCDFFile, etotNetCDFFile):
     outputNetCDF = INPUT_DATA + yieldNetCDFFile.replace("_yield_sea_", "_wuexx_sea_")
     yield_data = Dataset(INPUT_DATA + yieldNetCDFFile)
     etot_data = Dataset(INPUT_DATA + etotNetCDFFile)
-    new_data = numpy.divide(yield_data.variables['yield'][:, :, :], etot_data.variables['AET'][:, :, :])    
-    wue_data = Dataset(outputNetCDF, 'w', format='NETCDF3_CLASSIC')    
-    wue_data.createDimension(u'lon', yield_data.variables['lon'].size)
-    wue_data.createDimension(u'lat', yield_data.variables['lat'].size) 
-    wue_data.createDimension(u'time', yield_data.variables['time'].size)
-    longitudes = wue_data.createVariable(u'lon', 'f4', ('lon',))
-    latitudes = wue_data.createVariable(u'lat', 'f4', ('lat',))
-    times = wue_data.createVariable(u'time', 'f8', ('time',))
-    wue = wue_data.createVariable(u'wue', 'f4', ('time', 'lat', 'lon',), fill_value= -9999)
-    longitudes[:] = yield_data.variables['lon'][:] 
-    latitudes[:] = yield_data.variables['lat'][:]
-    times[:] = yield_data.variables['time'][:] 
-    wue[:, :, :] = new_data[:, :, :]                        
-    wue_data.close() 
-    yield_data.close()
-    etot_data.close()
-    return outputNetCDF   
+    try:
+        new_data = numpy.divide(yield_data.variables['yield'][:, :, :], etot_data.variables['AET'][:, :, :])    
+        wue_data = Dataset(outputNetCDF, 'w', format='NETCDF3_CLASSIC')    
+        wue_data.createDimension(u'lon', yield_data.variables['lon'].size)
+        wue_data.createDimension(u'lat', yield_data.variables['lat'].size) 
+        wue_data.createDimension(u'time', yield_data.variables['time'].size)
+        longitudes = wue_data.createVariable(u'lon', 'f4', ('lon',))
+        latitudes = wue_data.createVariable(u'lat', 'f4', ('lat',))
+        times = wue_data.createVariable(u'time', 'f8', ('time',))
+        wue = wue_data.createVariable(u'wue', 'f4', ('time', 'lat', 'lon',), fill_value= -9999)
+        longitudes[:] = yield_data.variables['lon'][:] 
+        latitudes[:] = yield_data.variables['lat'][:]
+        times[:] = yield_data.variables['time'][:] 
+        wue[:, :, :] = new_data[:, :, :]
+    except (MemoryError):
+        logging.error("MemoryError while creating " + outputNetCDF)
+        pass
+    finally:                        
+        wue_data.close() 
+        yield_data.close()
+        etot_data.close()
+        return outputNetCDF   
 
 def zipUpNetCDFFile(netcdfFile):
     filename = os.path.basename(netcdfFile)
