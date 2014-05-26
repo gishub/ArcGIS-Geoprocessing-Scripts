@@ -5,6 +5,9 @@ WORKER_SCRIPT = 'D:/Users/andrewcottam/Documents/GitHub/ArcGIS-Geoprocessing-Scr
 INPUT_DATA = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Data/"
 INPUT_ZIPS = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Zips/"
 
+class FAOException(Exception):
+    pass
+
 def UnzipGZFile(gzfile, archivename):
     '''unzips a gz file using 7zip'''
     if os.path.exists(INPUT_DATA + archivename):
@@ -17,33 +20,65 @@ def UnzipGZFile(gzfile, archivename):
     p.wait()
     p.kill()
 
+def MatchVariableNameInDataset(possiblenames, dataset):
+    for v in dataset.variables.keys():
+        if v in possiblenames:
+            return v
+    raise FAOException("Dataset variable name cannot be found. Tried using " + ",".join([n for n in possiblenames]))
+
+def GetLongitudeVariableName(dataset):
+    if "lon" in dataset.variables.keys():
+        return "lon"
+    else:
+        return "longitude"
+
+def GetLatitudeVariableName(dataset):
+    if "lat" in dataset.variables.keys():
+        return "lat"
+    else:
+        return "latitude"
+
+def GetVariableNameForParameter(parameter, dataset):
+    if parameter == 'yield':
+        return MatchVariableNameInDataset(["yield", "harvest"], dataset)
+    elif parameter == "etotx":
+        return MatchVariableNameInDataset(["AET", "et"], dataset)
+
 def CreateNetCDF(yieldNetCDFFile, etotNetCDFFile):
     numpy.seterr(all='ignore')
     outputNetCDF = INPUT_DATA + yieldNetCDFFile.replace("_yield_sea_", "_wuexx_sea_")
     yield_data = Dataset(INPUT_DATA + yieldNetCDFFile)
     etot_data = Dataset(INPUT_DATA + etotNetCDFFile)
     try:
-        new_data = numpy.divide(yield_data.variables['yield'][:, :, :], etot_data.variables['AET'][:, :, :])    
+        yieldVariablename = GetVariableNameForParameter("yield", yield_data)
+        etotVariablename = GetVariableNameForParameter("etotx", etot_data)
+        yieldlon=GetLongitudeVariableName(yield_data)
+        yieldlat=GetLatitudeVariableName(yield_data)
+        new_data = numpy.divide(yield_data.variables[yieldVariablename][:, :, :], etot_data.variables[etotVariablename][:, :, :])    
         wue_data = Dataset(outputNetCDF, 'w', format='NETCDF3_CLASSIC')    
-        wue_data.createDimension(u'lon', yield_data.variables['lon'].size)
-        wue_data.createDimension(u'lat', yield_data.variables['lat'].size) 
+        wue_data.createDimension(u'lon', yield_data.variables[yieldlon].size)
+        wue_data.createDimension(u'lat', yield_data.variables[yieldlat].size) 
         wue_data.createDimension(u'time', yield_data.variables['time'].size)
         longitudes = wue_data.createVariable(u'lon', 'f4', ('lon',))
         latitudes = wue_data.createVariable(u'lat', 'f4', ('lat',))
         times = wue_data.createVariable(u'time', 'f8', ('time',))
         wue = wue_data.createVariable(u'wue', 'f4', ('time', 'lat', 'lon',), fill_value= -9999)
-        longitudes[:] = yield_data.variables['lon'][:] 
-        latitudes[:] = yield_data.variables['lat'][:]
+        longitudes[:] = yield_data.variables[yieldlon][:] 
+        latitudes[:] = yield_data.variables[yieldlat][:]
         times[:] = yield_data.variables['time'][:] 
         wue[:, :, :] = new_data[:, :, :]
+        wue_data.close() 
     except (MemoryError):
         logging.error("MemoryError while creating " + outputNetCDF)
-        pass
-    finally:                        
-        wue_data.close() 
+        return ""
+    except (FAOException) as e:
+        logging.error(e.message)
+        print e.message
+        return ""
+    finally:
         yield_data.close()
         etot_data.close()
-        return outputNetCDF   
+    return outputNetCDF   
 
 def zipUpNetCDFFile(netcdfFile):
     filename = os.path.basename(netcdfFile)
@@ -58,7 +93,7 @@ def zipUpNetCDFFile(netcdfFile):
 engine = win32com.client.Dispatch('DAO.DBEngine.120')
 db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
 queryDef = db.CreateQueryDef("", "SELECT distinct fullpath, archivename,filename FROM DownloadedZipFiles WHERE (((DownloadedZipFiles.filename) Like '*_yield_sea_*'));")
-# queryDef = db.CreateQueryDef("", "SELECT distinct fullpath, archivename,filename FROM DownloadedZipFiles WHERE filename'ClimAf_1_1960-2100_lpjg_can_wfdei_qmbc_B2_yield_sea_trmi_rf.nc.gz';")
+# queryDef = db.CreateQueryDef("", "SELECT distinct fullpath, archivename,filename FROM DownloadedZipFiles WHERE filename='ClimAf_1_1961_2099_lpjm_can_wfdei_qmbc_B1_yield_sea_teco_ir.nc.gz';")
 r = queryDef.OpenRecordset()
 total = r.RecordCount
 counter = 1
@@ -68,7 +103,7 @@ while not r.EOF:
     gzfile1 = str(r.fullpath)
     gzfile2 = gzfile1.replace("_yield_sea_", "_etotx_sea_")
     archivename1 = str(r.archivename)
-    if (os.path.exists(INPUT_ZIPS+archivename1.replace("yield","wuexx")+".gz")):
+    if (os.path.exists(INPUT_ZIPS + archivename1.replace("yield", "wuexx") + ".gz")):
         print "Output zipped NetCDF file already exists"
     else:
         rightpart = archivename1[archivename1.find("_yield_") - 3:].replace("_yield_sea_", "_etotx_sea_")  # archive name may not be the same as yield one - e.g. somd
@@ -85,13 +120,19 @@ while not r.EOF:
                 UnzipGZFile(gzfile2, archivename2)
                 print "Creating the Netcdf file"
                 netcdfFile = CreateNetCDF(archivename1, archivename2)
-                print "Created " + netcdfFile + "\nZipping file"
-                zippedNetCDF = zipUpNetCDFFile(netcdfFile)
-                print "Finished\n\n"
-                os.remove(netcdfFile)
+                if netcdfFile:
+                    print "Created " + netcdfFile + "\nZipping file"
+                    zippedNetCDF = zipUpNetCDFFile(netcdfFile)
+                    print "Finished\n\n"
+                    os.remove(netcdfFile)
+                else:
+                    print "NetCDF File not created"
             except (IOError):
                 logging.error("Error creating NetCDF file for WUE parameter. Required gz file " + gzfile2 + " not found")
                 print "Error creating NetCDF file for WUE parameter. Required gz file " + gzfile2 + " not found"
+            except (MemoryError):
+                logging.error("MemoryError creating NetCDF file for " + gzfile2)
+                print "MemoryError creating NetCDF file for " + gzfile2 
             if os.path.exists(INPUT_DATA + archivename2):
                 os.remove(INPUT_DATA + archivename2)
         else:
