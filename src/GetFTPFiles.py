@@ -11,9 +11,9 @@ def GetFTPFile(ftpFullFilename): #gets an ftp file from the server
     if os.path.exists(localFilename):
         print "Already exists - skipping" 
     else:
-        if "meteo" in ftpFullFilename:
-            print "Big climate NetCDF file - skipping for now"
-            return
+#         if "meteo" in ftpFullFilename:
+#             print "Big climate NetCDF file - skipping for now"
+#             return
         try:
             print "Getting file " +  filename
             ftp.retrbinary('RETR %s' % ftpRelativeFilename, open(localFilename, 'wb').write)
@@ -27,7 +27,8 @@ ftp = FTP(FTP_ROOT)
 ftp.login()
 engine = win32com.client.Dispatch('DAO.DBEngine.120')
 db = engine.OpenDatabase('D:/Users/andrewcottam/Documents/fao_ftp_files.accdb')
-queryDef = db.CreateQueryDef("", "select distinct fullPath from [required files] where model<>'Climate'")
+# queryDef = db.CreateQueryDef("", "select distinct fullPath from [required files] where model<>'Climate'")
+queryDef = db.CreateQueryDef("", "select distinct fullPath from [required files] where fullpath like '*daily.pr.africa.nc.gz*'") # rainfall only
 table = queryDef.OpenRecordset()
 total = table.RecordCount
 counter = 1

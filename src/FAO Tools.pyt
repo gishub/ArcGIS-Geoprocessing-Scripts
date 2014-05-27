@@ -88,23 +88,23 @@ class SummariseClimateData(object):
             y_cell_size = float(data.variables[LATITUDE_DIMENSION_NAME][1]) - min_lat
             zipfilename = netCDFFile.split(".")[4] + "_" + netCDFFile.split(".")[6]
             rootfilename = BASE_PATH + "Output data/" + zipfilename
-            decadalindices = self.getDecadalSliceIndices()
-            for item in decadalindices:
-                arcpy.AddMessage("Producing mean for decade " + item["label"])
-                outputname = rootfilename + "_yy" + item["label"] + ".tif"
-                self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
+#             decadalindices = self.getDecadalSliceIndices()
+#             for item in decadalindices:
+#                 arcpy.AddMessage("Producing mean for decade " + item["label"])
+#                 outputname = rootfilename + "_yy" + item["label"] + ".tif"
+#                 self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
             yearlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "years")
             for item in yearlyIndices:
                 arcpy.AddMessage("Producing mean for " + str(item["year"]))
                 outputname = rootfilename + "_y" + str(item["year"]) + ".tif"
                 self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
-            monthlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "month")
-            for item in monthlyIndices:
-                arcpy.AddMessage("Producing mean for " + calendar.month_name[item["month"]] + " " + str(item["year"]))
-                outputname = rootfilename + "_y" + str(item["year"]) + "_m" + str(item["month"]).zfill(2) + ".tif"
-                self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
-            arcpy.AddMessage("Zipping folder..")
-            self.zipFolder(zipfilename)
+#             monthlyIndices = self.getSliceIndices(data.variables[TIME_DIMENSION_NAME], "month")
+#             for item in monthlyIndices:
+#                 arcpy.AddMessage("Producing mean for " + calendar.month_name[item["month"]] + " " + str(item["year"]))
+#                 outputname = rootfilename + "_y" + str(item["year"]) + "_m" + str(item["month"]).zfill(2) + ".tif"
+#                 self.writeSlice(data.variables[valueDimensionName], item["start"], item["end"], min_lon, min_lat, x_cell_size, y_cell_size, outputname)
+#             arcpy.AddMessage("Zipping folder..")
+#             self.zipFolder(zipfilename)
             data.close()
             if deletenetcdf == "true":
                 os.remove(netCDFFile)
@@ -162,14 +162,20 @@ class SummariseClimateData(object):
 #         arcpy.ImportMetadata_conversion(r"D:\Users\andrewcottam\Documents\ArcGIS\fao\metadata.xml", "FROM_ISO_19139", raster, "ENABLED")
 
     def getSlice(self, variable, startIndex, endIndex):
-        slice = numpy.mean(variable[startIndex:endIndex, :, :], 0).filled(NO_DATA_VALUE)
-        flippedSlice = numpy.flipud(slice)
+        arcpy.AddMessage('startIndex: ' + str(startIndex) + ' endIndex: ' + str(endIndex))
+        try:
+            slice = numpy.mean(variable[startIndex:endIndex, :, :], 0).filled(NO_DATA_VALUE)
+            flippedSlice = numpy.flipud(slice)
+        except (RuntimeError)as e:
+            print e
         return flippedSlice
     
     def unzipGZFile(self, gzfile, outputfolder, deleteZipfile):
         arcpy.AddMessage("Unzipping " + gzfile + "..")
         p = subprocess.Popen('7z e "' + gzfile + '" -o"' + outputfolder + '" -aos', stdout=subprocess.PIPE)
         result = p.communicate()[0]
+        p.wait()
+        p.kill()
         pos = result.find(START_TEXT)
         if pos > -1:
             extractedFilename = result[pos + len(START_TEXT):result.find(END_TEXT) - 4]
