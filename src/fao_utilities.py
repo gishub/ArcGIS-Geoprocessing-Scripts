@@ -51,7 +51,32 @@ def GetMatchingGZFiles(f):
     engine = win32com.client.Dispatch('DAO.DBEngine.120')
     db = engine.OpenDatabase(DATABASE_PATH)
     queryDef = db.CreateQueryDef("", "SELECT distinct fullpath, archivename, ftpurl FROM DownloadedZipFiles WHERE DownloadedZipFiles.filename Like '*" + f + "*';")
-    print queryDef.Sql
+#     print queryDef.Sql
+    r = queryDef.OpenRecordset()
+    records = []
+    while not r.EOF:
+        records.append([str(r.fields[i]) for i in range(r.fields.count)])
+        r.MoveNext()
+    db.Close()
+    return records
+
+def GetCropGroupsAndFilenames():
+    engine = win32com.client.Dispatch('DAO.DBEngine.120')
+    db = engine.OpenDatabase(DATABASE_PATH)
+    queryDef = db.QueryDefs("crop groups and filenames")
+    r = queryDef.OpenRecordset()
+    records = []
+    while not r.EOF:
+        records.append([str(r.fields[i]) for i in range(r.fields.count)])
+        r.MoveNext()
+    db.Close()
+    return records
+
+def GetFilesForGroup(likeclauses):
+    engine = win32com.client.Dispatch('DAO.DBEngine.120')
+    db = engine.OpenDatabase(DATABASE_PATH)
+    sqlclausess = " ".join(["OR filename LIKE '*" + s + "*'" for s in likeclauses])[3:]
+    queryDef = db.CreateQueryDef("", "SELECT DISTINCT DownloadedZipFiles.fullpath, DownloadedZipFiles.archivename FROM DownloadedZipFiles WHERE " + sqlclausess)
     r = queryDef.OpenRecordset()
     records = []
     while not r.EOF:

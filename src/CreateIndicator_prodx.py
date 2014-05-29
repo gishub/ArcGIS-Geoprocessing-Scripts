@@ -34,6 +34,8 @@ for file in files:
         except (MemoryError)as e:
             logging.error("MemoryError while creating " + os.path.basename(outputNetCDFZip))
             print "MemoryError while creating " + os.path.basename(outputNetCDFZip)
+        except (WindowsError)as e:
+            print e
     else:
         print "Output already exists - skipping"
     counter = counter + 1
