@@ -1,6 +1,6 @@
 import fao_utilities, netCDF4, os, numpy
 from netCDF4 import Dataset
-param = {"name":"carea", "longname":"crop area for crop group", "unit":"ha/pixel", "expression":"harea*5000 for all crops"}
+param = {"name":"prodx", "longname":"production for crop group", "unit":"hg/pixel", "expression":"crop area x yield x *100000 for all crops"}
 groups = fao_utilities.GetCropGroupsAndFilenames(param['name'])
 for i in range(1, 12):
     items = [group[1] for group in groups if group[0] == str(i)]  # get the search string of the files to match, e.g. ['_carea_sea_trri_ir', '_carea_sea_trri_rf']

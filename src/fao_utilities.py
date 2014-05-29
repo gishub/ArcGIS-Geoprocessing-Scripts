@@ -5,6 +5,9 @@ INPUT_DATA = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Data/"
 INPUT_ZIPS = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Input Zips/"
 OUTPUT_DATA = "D:/Users/andrewcottam/Documents/ArcGIS/fao/Output Data/"
 
+class FAOException(Exception):
+    pass
+
 def UnzipGZFile(gzfile, archivename):
     '''unzips a gz file using 7zip'''
     if os.path.exists(INPUT_DATA + archivename):
@@ -60,10 +63,10 @@ def GetMatchingGZFiles(f):
     db.Close()
     return records
 
-def GetCropGroupsAndFilenames():
+def GetCropGroupsAndFilenames(param):
     engine = win32com.client.Dispatch('DAO.DBEngine.120')
     db = engine.OpenDatabase(DATABASE_PATH)
-    queryDef = db.QueryDefs("crop groups and filenames")
+    queryDef = db.QueryDefs("crop groups and filenames " + param)
     r = queryDef.OpenRecordset()
     records = []
     while not r.EOF:
@@ -84,7 +87,7 @@ def GetFilesForGroup(likeclauses):
         r.MoveNext()
     db.Close()
     return records
-
+ 
 def GetCorrespondingFile(f, searchStr, replaceStr):
     engine = win32com.client.Dispatch('DAO.DBEngine.120')
     db = engine.OpenDatabase(DATABASE_PATH)
@@ -96,7 +99,7 @@ def GetCorrespondingFile(f, searchStr, replaceStr):
     if not r.EOF:
         return str(r.archivename)
     else:
-        raise Exception("No corresponding files found")
+        raise FAOException("No corresponding files found")
 
 def GetNetCDFData(dataset,variableName): #gets the data from the array ignoring any single dimension entries
     if dataset.variables[variableName].ndim>3:
