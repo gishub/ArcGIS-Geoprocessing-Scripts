@@ -1,4 +1,4 @@
-import win32com.client, subprocess, os, numpy, netCDF4, gzip, logging
+import win32com.client, subprocess, os, numpy, netCDF4, gzip, logging,datetime
 from netCDF4 import Dataset
 PYTHON_PATH = 'C:/Python27/ArcGIS10.2/python.exe'
 WORKER_SCRIPT = 'D:/Users/andrewcottam/Documents/GitHub/ArcGIS-Geoprocessing-Scripts/src/ProcessNetCDFFiles.py'
@@ -60,6 +60,7 @@ def CreateNetCDF(dataset1, dataset2, parameter):
             new_data = numpy.divide(data1.variables[variablename1][:, :, :], data2.variables[variablename2][:, :, :]) * 1000  
 #         create the new netcdf output file
         outputData = Dataset(outputNetCDF, 'w', format='NETCDF3_CLASSIC') 
+        outputData.history= str(datetime.datetime.now()) + ". Created from the input NetCDF files: "
 #         create the new dimensions in the netcdf file 
         outputData.createDimension(u'lon', data1.variables[dataset1Lon].size)
         outputData.createDimension(u'lat', data1.variables[dataset1Lat].size) 
@@ -68,7 +69,7 @@ def CreateNetCDF(dataset1, dataset2, parameter):
         longitudes = outputData.createVariable(u'lon', 'f4', ('lon',))
         latitudes = outputData.createVariable(u'lat', 'f4', ('lat',))
         times = outputData.createVariable(u'time', 'f8', ('time',))
-        outputvariable = outputData.createVariable(u'wue', 'f4', ('time', 'lat', 'lon',), fill_value= -9999)
+        outputvariable = outputData.createVariable(parameter['outputvariablename'], 'f4', ('time', 'lat', 'lon',), fill_value= -9999)
 #         populate the lat/lon/time values from the input dataset
         longitudes[:] = data1.variables[dataset1Lon][:] 
         latitudes[:] = data1.variables[dataset1Lat][:]
@@ -177,9 +178,9 @@ def CreateNetCDFs(parameter):
         counter = counter + 1
     
 parameters = [
-{"name":"wuexx", "firstDatasetKeyword" :"_yield_sea_", "secondDatasetKeyword" : "_etotx_sea_", "variablenames1":["yield", "harvest"], "variablenames2":["AET", "et"]},
-{"name":"wrsix", "firstDatasetKeyword" :"_etotx_sea_", "secondDatasetKeyword" : "_petxx_sea_", "variablenames1":["AET", "et"], "variablenames2":["PET", "pet"]},
-{"name":"aixxx", "firstDatasetKeyword" :"_precx_ann_", "secondDatasetKeyword" : "_petxx_sea_", "variablenames1":["pre"], "variablenames2":["PET", "pet"]}
+# {"name":"wuexx", "firstDatasetKeyword" :"_yield_sea_", "secondDatasetKeyword" : "_etotx_sea_", "variablenames1":["yield", "harvest"], "variablenames2":["AET", "et"],"outputvariablename":"wue"},
+{"name":"wrsix", "firstDatasetKeyword" :"_etotx_sea_", "secondDatasetKeyword" : "_petxx_sea_", "variablenames1":["AET", "et"], "variablenames2":["PET", "pet"],"outputvariablename":"wrsi"},
+# {"name":"aixxx", "firstDatasetKeyword" :"_precx_ann_", "secondDatasetKeyword" : "_petxx_sea_", "variablenames1":["pre"], "variablenames2":["PET", "pet"],"outputvariablename":"ai"}
 ]   
 logging.basicConfig(filename=r"D:\Users\andrewcottam\Documents\ArcGIS\fao\processing.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 engine = win32com.client.Dispatch('DAO.DBEngine.120')

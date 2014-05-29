@@ -69,4 +69,6 @@ for file in files:
         logging.error("Error on file " + filename + " filesize: " + str(filesize) + " archivename: " + archivename + " archivesize: " + str(archivesize))
         pass
 db.QueryDefs("UpdateOutputZipFiles").Execute()
+q = db.CreateQueryDef("","UPDATE DownloadedZipFiles INNER JOIN ftp_files ON DownloadedZipFiles.filename = ftp_files.filename SET DownloadedZipFiles.ftpurl = [fullfilename];")
+q.Execute()
 db.Close()
