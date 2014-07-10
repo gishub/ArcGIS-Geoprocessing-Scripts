@@ -1,4 +1,5 @@
 import urllib, zipfile, arcpy, re, os
+# downloads the SWDB database from http://dds.cr.usgs.gov/srtm/version2_1/SWBD/ and unzips all of the files
 HTTP_ADDRESS = "http://dds.cr.usgs.gov/srtm/version2_1/SWBD/"
 for folder in ['SWBDwest', 'SWBDeast']:
     arcpy.AddMessage("Getting file information for " + folder)
