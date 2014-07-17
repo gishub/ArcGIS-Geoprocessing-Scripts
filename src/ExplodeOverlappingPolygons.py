@@ -1,7 +1,7 @@
 import arcpy, numpy
 # using a graph coloring method based on the code from http://gis.stackexchange.com/questions/32217/exploding-overlapping-to-new-non-overlapping-polygons
-FEATURE_CLASS_LAYER = "The_Wash_Layer"
-FEATURE_GROUPS_FREQUENCY = "The_Wash_Frequency"
+FEATURE_CLASS_LAYER = "fc_layer"
+FEATURE_GROUPS_FREQUENCY = "feature_groups_frequency"
 SPACER = "    "
 groupIDs = [0]
    
@@ -70,6 +70,7 @@ arcpy.Delete_management(r'featuredataset\topo1')  # delete the topology
 arcpy.Delete_management(r'featuredataset\topoerrors_line')  # delete the line topo errors
 arcpy.Delete_management(r'featuredataset\topoerrors_point')  # delete the point topo errors
 arcpy.Delete_management(r'featuredataset\topoerrors_poly')  # delete the poly topo errors
+# create the non-overlapping feature groups
 arcpy.AddMessage("STEP 2: Creating the groups of non-overlapping features")
 arcpy.AddMessage(SPACER + "Iterating through the features to created the groups")
 unique_origin_ids = [int(t[0]) for t in arcpy.da.TableToNumPyArray("unique_OriginObjectIDs", "OriginObjectID").tolist()]
@@ -77,38 +78,34 @@ feature_groups = arcpy.da.TableToNumPyArray("unique_overlaps_sorted", ["OriginOb
 for unique_origin_id in unique_origin_ids:
     arcpy.AddMessage(SPACER + SPACER + "Feature: " + str(unique_origin_id))
     overlapping_feature_ids = feature_groups[numpy.where(feature_groups['OriginObjectID'] == unique_origin_id)]['DestinationObjectID']
-    arcpy.AddMessage(SPACER + SPACER + "Overlapping features: " + ",".join([str(id) for id in overlapping_feature_ids]))
+#     arcpy.AddMessage(SPACER + SPACER + "Overlapping features: " + ",".join([str(id) for id in overlapping_feature_ids]))
     groups_for_overlapping_features = list(set(feature_groups[numpy.in1d(feature_groups['OriginObjectID'], overlapping_feature_ids)]['grp']))
     arcpy.AddMessage(SPACER + SPACER + "Overlapping feature groups: " + ",".join([str(id) for id in groups_for_overlapping_features]))
     groupID = getGroupID(groups_for_overlapping_features)
     arcpy.AddMessage(SPACER + SPACER + "Assigning group " + str(groupID) + " to feature " + str(unique_origin_id))
     for i in numpy.where(feature_groups['OriginObjectID'] == unique_origin_id)[0]:
         feature_groups[i]['grp'] = groupID
+arcpy.AddMessage(SPACER + "Deleting the temporary tables")
+arcpy.Delete_management('unique_OriginObjectIDs')  # delete the unique_OriginObjectIDs table
+arcpy.Delete_management('unique_overlaps_sorted')  # delete the unique_overlaps_sorted table
 arcpy.AddMessage(SPACER + "Creating final output table of non-overlapping feature groups")        
 table_name = arcpy.env.workspace + "/feature_groups"
 arcpy.da.NumPyArrayToTable(feature_groups, table_name)
-arcpy.Delete_management('unique_OriginObjectIDs')  # delete the unique_OriginObjectIDs table
-arcpy.Delete_management('unique_overlaps_sorted')  # delete the unique_overlaps_sorted table
-arcpy.AddMessage(SPACER + "Adding feature group field to feature class")
-arcpy.AddField_management(fc, "feature_group", "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
-arcpy.AddMessage(SPACER + "Adding join to final output table")
-arcpy.MakeTableView_management('feature_groups', "feature_groups_tv")  # make a table view of the table
-arcpy.MakeFeatureLayer_management(fc, FEATURE_CLASS_LAYER, "#", "#", "#")
-arcpy.AddJoin_management(FEATURE_CLASS_LAYER, "OBJECTID", "feature_groups_tv", "OriginObjectID", "KEEP_ALL")
-arcpy.AddMessage(SPACER + "Calculating the feature group field")
-arcpy.CalculateField_management(FEATURE_CLASS_LAYER, "feature_group", "[feature_groups.grp]", "VB", "#")
-arcpy.AddMessage(SPACER + "Removing join on feature class")
-arcpy.RemoveJoin_management(FEATURE_CLASS_LAYER, "feature_groups")
-arcpy.AddMessage(SPACER + "Deleting the temporary tables")
-arcpy.Delete_management("feature_groups_tv")
-arcpy.Delete_management("feature_groups")
+arcpy.AddMessage(SPACER + "Getting the unique feature groups")
+arcpy.Frequency_analysis("feature_groups","feature_groups_Frequency1","OriginObjectID;grp","#")
+arcpy.AddMessage(SPACER + "Adding the grp field to the feature class")
+arcpy.JoinField_management(fc, "OBJECTID", "feature_groups_Frequency1", "OriginObjectID", "grp")
+arcpy.Delete_management("feature_groups_Frequency1")
 arcpy.AddMessage(SPACER + "Creating group 0 for non-overlapping features")
-arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "NEW_SELECTION", "feature_group IS NULL")
-arcpy.CalculateField_management(FEATURE_CLASS_LAYER, "feature_group", "0", "VB", "#")
+arcpy.MakeFeatureLayer_management(fc, FEATURE_CLASS_LAYER)
+arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "NEW_SELECTION", "grp IS NULL")
+arcpy.CalculateField_management(FEATURE_CLASS_LAYER, "grp", "0", "VB", "#")
 arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "CLEAR_SELECTION")
 arcpy.AddMessage(SPACER + "Getting the unique non-overlapping feature groups to export")
-arcpy.Frequency_analysis(FEATURE_CLASS_LAYER, FEATURE_GROUPS_FREQUENCY, "feature_group", "#")
-unique_non_overlapping_groups = arcpy.da.TableToNumPyArray(FEATURE_GROUPS_FREQUENCY, "feature_group").tolist()
+arcpy.Frequency_analysis(FEATURE_CLASS_LAYER, FEATURE_GROUPS_FREQUENCY, "grp", "#")
+# unique_non_overlapping_groups = arcpy.da.TableToNumPyArray(FEATURE_GROUPS_FREQUENCY, "grp").tolist()
+arcpy.Delete_management(FEATURE_GROUPS_FREQUENCY)
+# Exporting the groups of non-overlapping features
 arcpy.AddMessage("STEP 3: Exporting the groups of non-overlapping features")
 arcpy.AddMessage(SPACER + "Creating the feature dataset")
 arcpy.CreateFeatureDataset_management(arcpy.env.workspace, "feature_groups", "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];-400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;0.001;0.001;IsHighPrecision")
@@ -119,4 +116,3 @@ for unique_non_overlapping_group in unique_non_overlapping_groups:
     arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "NEW_SELECTION", expression)
     arcpy.FeatureClassToFeatureClass_conversion(FEATURE_CLASS_LAYER, "feature_groups", desc.name + str(group_id).zfill(3))
 arcpy.Delete_management(FEATURE_CLASS_LAYER)
-arcpy.Delete_management(FEATURE_GROUPS_FREQUENCY)
