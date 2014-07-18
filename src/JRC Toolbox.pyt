@@ -1,5 +1,5 @@
 import arcpy, numpy
-#constants
+# constants
 FEATURE_CLASS_LAYER = "fc_layer"
 FEATURE_GROUPS_FREQUENCY = "feature_groups_frequency"
 SPACER = "    "
@@ -40,8 +40,15 @@ class TabulateAreaForFeatureDataset(object):
 
     def getParameterInfo(self):
         """Define parameter definitions"""
-        params = None
-        return params
+        param0 = arcpy.Parameter(displayName="Feature dataset", name="in_feature_dataset", datatype="GPFeatureLayer", parameterType="Required", direction="Input")
+        param1 = arcpy.Parameter(displayName="Zone field", name="in_zone_field", datatype="GPString", parameterType="Required", direction="Input")
+        param1.value = "wdpaid"
+        param2 = arcpy.Parameter(displayName="Raster dataset", name="in_raster_dataset", datatype="GPRasterLayer", parameterType="Required", direction="Input")
+        param3 = arcpy.Parameter(displayName="Class field", name="in_class_field", datatype="Field", parameterType="Required", direction="Input")
+        param3.value = "Value"
+        param4 = arcpy.Parameter(displayName="Output table name", name="out_table_name", datatype="GPString", parameterType="Required", direction="Input")
+        param4.value = "tabulate_area"
+        return [param0, param1, param2, param3, param4]
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
@@ -51,6 +58,12 @@ class TabulateAreaForFeatureDataset(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+#         if parameters[0].value:  # if the feature dataset has been set - get the first feature classes fields
+#             arcpy.env.workspace = parameters[0].valueAsText
+#             featureclasses = arcpy.ListFeatureClasses()
+#             if len(featureclasses) > 0:
+#                 desc = arcpy.Describe(featureclasses[0])
+#                 parameters[1].value = desc.fields[0]
         return
 
     def updateMessages(self, parameters):
@@ -60,6 +73,56 @@ class TabulateAreaForFeatureDataset(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
+        feature_dataset = parameters[0].valueAsText  # get the featuredataset
+        zone_field = parameters[1].valueAsText  # get the zone_field
+        input_raster = parameters[2].valueAsText  # get the input raster
+        arcpy_raster = arcpy.Raster(input_raster)
+        raster_layer = arcpy.MakeRasterLayer_management(input_raster)  # create a raster layer to get the attribute table
+        if arcpy_raster.hasRAT:
+            arcpy.AddMessage("Raster attribute table found")
+        else:
+            arcpy.AddMessage("No raster attribute table found - creating one")
+            # TODO create the raster attribute table
+        class_field = parameters[3].valueAsText  # get the class_field
+        output_table_name = parameters[4].valueAsText  # get the output table name
+        desc = desc = arcpy.Describe(feature_dataset)
+        filegdbpath = desc.path
+        arcpy.env.workspace = feature_dataset
+        featureclasses = arcpy.ListFeatureClasses()
+        arcpy.env.workspace = filegdbpath
+        arcpy.env.extent = "MINOF"
+        arcpy.env.snapRaster = input_raster
+        if arcpy.Exists(output_table_name):
+            arcpy.AddMessage("Output table " + output_table_name + " already exists")
+        else:
+            # create the output table - first get the unique values in the raster
+            raster_attribute_table = arcpy.SearchCursor(raster_layer)  # get the attribute table
+            value_list = []
+            for row in raster_attribute_table:  # iterate through the unique values and build up a list of fields
+                 value_list.append(row.Value)
+            arcpy.AddMessage("Creating the output table")
+            arcpy.CreateTable_management(arcpy.env.workspace, output_table_name, "#", "#")
+            arcpy.AddField_management(output_table_name, zone_field, "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+            arcpy.AddField_management(output_table_name, "VALUE", "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+            for value in value_list:
+                arcpy.AddMessage("Adding field " + "VALUE_" + str(value))
+                arcpy.AddField_management(output_table_name, "VALUE_" + str(value), "DOUBLE", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+        # iterate through the feature classes
+        for featureclass in featureclasses:  
+            arcpy.AddMessage("Converting " + featureclass + " to raster")
+            arcpy.PolygonToRaster_conversion(featureclass, zone_field, r"in_memory\tmp_raster", "MAXIMUM_AREA", zone_field, "0.0089285714")
+            arcpy.AddMessage("TabulateArea for " + featureclass)
+            arcpy.gp.TabulateArea_sa(r"in_memory\tmp_raster", "Value", raster_layer, "Value", r"in_memory\tmp_statistics", "0.0089285714")
+            arcpy.AddMessage("Appending results")
+            arcpy.Append_management(r"in_memory\tmp_statistics", output_table_name, "NO_TEST")
+        arcpy.AddMessage("Creating the final output table")
+        output_table_view = arcpy.MakeTableView_management(output_table_name)
+        arcpy.AddMessage("Calculating the unique key")
+        arcpy.CalculateField_management(output_table_view, zone_field, "[VALUE]", "VB", "#")
+        arcpy.AddMessage("Deleting temporary tables")
+        arcpy.DeleteField_management(output_table_name, "VALUE")
+        arcpy.Delete_management(output_table_view)
+        arcpy.Delete_management(raster_layer)
         return
 
 class ExplodeOverlappingPolygons(object):
@@ -73,8 +136,8 @@ class ExplodeOverlappingPolygons(object):
         """Define parameter definitions"""
         param0 = arcpy.Parameter(
             displayName="Input feature class",
-            name="fc",
-            datatype="DEFeatureClass",
+            name="input_feature_class",
+            datatype="GPFeatureLayer",
             parameterType="Required",
             direction="Input")
         return [param0]
@@ -186,13 +249,13 @@ class ExplodeOverlappingPolygons(object):
         # Exporting the groups of non-overlapping features
         arcpy.AddMessage("STEP 3: Exporting the groups of non-overlapping features")
         arcpy.AddMessage(SPACER + "Creating the feature dataset")
-        arcpy.CreateFeatureDataset_management(arcpy.env.workspace, "feature_groups", "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];-400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;0.001;0.001;IsHighPrecision")
+        arcpy.CreateFeatureDataset_management(arcpy.env.workspace, desc.name + "_feature_groups", "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];-400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;0.001;0.001;IsHighPrecision")
         for unique_non_overlapping_group in unique_non_overlapping_groups:
             group_id = str(unique_non_overlapping_group[0])
             arcpy.AddMessage(SPACER + SPACER + "Exporting group " + group_id)
             expression = "grp = " + group_id
             arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "NEW_SELECTION", expression)
-            arcpy.FeatureClassToFeatureClass_conversion(FEATURE_CLASS_LAYER, "feature_groups", desc.name + "_" + str(group_id).zfill(3))
+            arcpy.FeatureClassToFeatureClass_conversion(FEATURE_CLASS_LAYER, desc.name + "_feature_groups", desc.name + "_" + str(group_id).zfill(3))
         arcpy.AddMessage(SPACER + "Deleting the temporary tables and the grp field from the feature class")
         arcpy.Delete_management(FEATURE_CLASS_LAYER)
         arcpy.DeleteField_management(fc, "grp")
