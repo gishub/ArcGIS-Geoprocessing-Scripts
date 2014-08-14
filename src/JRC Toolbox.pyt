@@ -40,7 +40,7 @@ class TabulateAreaForFeatureDataset(object):
 
     def getParameterInfo(self):
         """Define parameter definitions"""
-        param0 = arcpy.Parameter(displayName="Feature dataset", name="in_feature_dataset", datatype="GPFeatureLayer", parameterType="Required", direction="Input")
+        param0 = arcpy.Parameter(displayName="Feature dataset", name="in_feature_dataset", datatype="DEFeatureDataset", parameterType="Required", direction="Input")
         param1 = arcpy.Parameter(displayName="Zone field", name="in_zone_field", datatype="GPString", parameterType="Required", direction="Input")
         param1.value = "wdpaid"
         param2 = arcpy.Parameter(displayName="Raster dataset", name="in_raster_dataset", datatype="GPRasterLayer", parameterType="Required", direction="Input")
@@ -72,57 +72,64 @@ class TabulateAreaForFeatureDataset(object):
         return
 
     def execute(self, parameters, messages):
-        """The source code of the tool."""
-        feature_dataset = parameters[0].valueAsText  # get the featuredataset
-        zone_field = parameters[1].valueAsText  # get the zone_field
-        input_raster = parameters[2].valueAsText  # get the input raster
-        arcpy_raster = arcpy.Raster(input_raster)
-        raster_layer = arcpy.MakeRasterLayer_management(input_raster)  # create a raster layer to get the attribute table
-        if arcpy_raster.hasRAT:
-            arcpy.AddMessage("Raster attribute table found")
-        else:
-            arcpy.AddMessage("No raster attribute table found - creating one")
-            # TODO create the raster attribute table
-        class_field = parameters[3].valueAsText  # get the class_field
-        output_table_name = parameters[4].valueAsText  # get the output table name
-        desc = desc = arcpy.Describe(feature_dataset)
-        filegdbpath = desc.path
-        arcpy.env.workspace = feature_dataset
-        featureclasses = arcpy.ListFeatureClasses()
-        arcpy.env.workspace = filegdbpath
-        arcpy.env.extent = "MINOF"
-        arcpy.env.snapRaster = input_raster
-        if arcpy.Exists(output_table_name):
-            arcpy.AddMessage("Output table " + output_table_name + " already exists")
-        else:
-            # create the output table - first get the unique values in the raster
-            raster_attribute_table = arcpy.SearchCursor(raster_layer)  # get the attribute table
-            value_list = []
-            for row in raster_attribute_table:  # iterate through the unique values and build up a list of fields
-                 value_list.append(row.Value)
-            arcpy.AddMessage("Creating the output table")
-            arcpy.CreateTable_management(arcpy.env.workspace, output_table_name, "#", "#")
-            arcpy.AddField_management(output_table_name, zone_field, "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
-            arcpy.AddField_management(output_table_name, "VALUE", "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
-            for value in value_list:
-                arcpy.AddMessage("Adding field " + "VALUE_" + str(value))
-                arcpy.AddField_management(output_table_name, "VALUE_" + str(value), "DOUBLE", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
-        # iterate through the feature classes
-        for featureclass in featureclasses:  
-            arcpy.AddMessage("Converting " + featureclass + " to raster")
-            arcpy.PolygonToRaster_conversion(featureclass, zone_field, r"in_memory\tmp_raster", "MAXIMUM_AREA", zone_field, "0.0089285714")
-            arcpy.AddMessage("TabulateArea for " + featureclass)
-            arcpy.gp.TabulateArea_sa(r"in_memory\tmp_raster", "Value", raster_layer, "Value", r"in_memory\tmp_statistics", "0.0089285714")
-            arcpy.AddMessage("Appending results")
-            arcpy.Append_management(r"in_memory\tmp_statistics", output_table_name, "NO_TEST")
-        arcpy.AddMessage("Creating the final output table")
-        output_table_view = arcpy.MakeTableView_management(output_table_name)
-        arcpy.AddMessage("Calculating the unique key")
-        arcpy.CalculateField_management(output_table_view, zone_field, "[VALUE]", "VB", "#")
-        arcpy.AddMessage("Deleting temporary tables")
-        arcpy.DeleteField_management(output_table_name, "VALUE")
-        arcpy.Delete_management(output_table_view)
-        arcpy.Delete_management(raster_layer)
+        try:
+            """The source code of the tool."""
+            feature_dataset = parameters[0].valueAsText  # get the featuredataset
+            zone_field = parameters[1].valueAsText  # get the zone_field
+            input_raster = parameters[2].valueAsText  # get the input raster
+            arcpy_raster = arcpy.Raster(input_raster)
+            raster_layer = arcpy.MakeRasterLayer_management(input_raster)  # create a raster layer to get the attribute table
+            if arcpy_raster.hasRAT:
+                arcpy.AddMessage("Raster attribute table found")
+            else:
+                arcpy.AddMessage("No raster attribute table found - creating one")
+                # TODO create the raster attribute table
+            class_field = parameters[3].valueAsText  # get the class_field
+            output_table_name = parameters[4].valueAsText  # get the output table name
+            desc = desc = arcpy.Describe(feature_dataset)
+            filegdbpath = desc.path
+            arcpy.env.workspace = feature_dataset
+            featureclasses = arcpy.ListFeatureClasses()
+            arcpy.env.workspace = filegdbpath
+            arcpy.env.extent = "MINOF"
+            arcpy.env.snapRaster = input_raster
+            if arcpy.Exists(output_table_name):
+                arcpy.AddMessage("Output table " + output_table_name + " already exists")
+            else:
+                # create the output table - first get the unique values in the raster
+                raster_attribute_table = arcpy.SearchCursor(raster_layer)  # get the attribute table
+                value_list = []
+                for row in raster_attribute_table:  # iterate through the unique values and build up a list of fields
+                     value_list.append(row.Value)
+                arcpy.AddMessage("Creating the output table")
+                arcpy.CreateTable_management(arcpy.env.workspace, output_table_name, "#", "#")
+                arcpy.AddField_management(output_table_name, zone_field, "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+                arcpy.AddField_management(output_table_name, "VALUE", "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+                for value in value_list:
+                    arcpy.AddMessage("Adding field " + "VALUE_" + str(value))
+                    arcpy.AddField_management(output_table_name, "VALUE_" + str(value), "DOUBLE", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")
+            # iterate through the feature classes
+            for featureclass in featureclasses:  
+                arcpy.AddMessage("Converting " + featureclass + " to raster")
+                arcpy.PolygonToRaster_conversion(featureclass, zone_field, "tmp_raster", "MAXIMUM_AREA", zone_field, "0.0089285714")
+                arcpy.AddMessage("Updating the raster attribute table for  " + featureclass)
+                arcpy.BuildRasterAttributeTable_management("tmp_raster", "Overwrite")
+                arcpy.AddMessage("TabulateArea for " + featureclass)
+                arcpy.gp.TabulateArea_sa("tmp_raster", "Value", raster_layer, "Value", "tmp_statistics", "0.0089285714")
+                arcpy.AddMessage("Appending results")
+                arcpy.Append_management("tmp_statistics", output_table_name, "NO_TEST")
+                arcpy.Delete_management("tmp_raster")
+                arcpy.Delete_management("tmp_statistics")
+            arcpy.AddMessage("Creating the final output table")
+            output_table_view = arcpy.MakeTableView_management(output_table_name)
+            arcpy.AddMessage("Calculating the unique key")
+            arcpy.CalculateField_management(output_table_view, zone_field, "[VALUE]", "VB", "#")
+            arcpy.AddMessage("Deleting temporary tables")
+            arcpy.DeleteField_management(output_table_name, "VALUE")
+            arcpy.Delete_management(output_table_view)
+            arcpy.Delete_management(raster_layer)
+        except:
+             arcpy.AddMessage("Something really bad happened")
         return
 
 class ExplodeOverlappingPolygons(object):
@@ -160,22 +167,38 @@ class ExplodeOverlappingPolygons(object):
     def execute(self, parameters, messages):
         fc = parameters[0].valueAsText
         desc = arcpy.Describe(fc)
+        featuredataset = desc.path[desc.path.rfind("\\") + 1:]
         arcpy.env.overwriteOutput = True
-        # get the overlaps from the topology
         arcpy.env.workspace = r"E:\cottaan\My Documents\ArcGIS\PA GLC2000 Analysis\default.gdb"
-        arcpy.AddMessage("STEP 1: Getting overlapping features")
+        # buffer the polygons
+        buffer = True
+        if buffer:
+            arcpy.AddMessage("STEP 1: Buffering input features")
+            arcpy.AddMessage(SPACER + "Adding the unbuffered_fc_OBJECTID field")
+            arcpy.AddField_management(fc, "unbuffered_fc_OBJECTID", "LONG", "#", "#", "#", "#", "NULLABLE", "NON_REQUIRED", "#")  # when you buffer a fc the features are not preserved in the same order so we need to make sure we can get the original OBJECTIDs at the end
+            arcpy.AddMessage(SPACER + "Populating the unbuffered_fc_OBJECTID field")
+            arcpy.CalculateField_management(fc, "unbuffered_fc_OBJECTID", "!OBJECTID!", "PYTHON_9.3", "#")
+            arcpy.AddMessage(SPACER + "Buffering")
+            arcpy.Buffer_analysis(fc, featuredataset + "/fc_buffer", "0.01 DecimalDegrees", "FULL", "ROUND", "NONE", "#")
+            arcpy.AddMessage(SPACER + "Removing the unbuffered_fc_OBJECTID field")
+            arcpy.DeleteField_management(fc, "unbuffered_fc_OBJECTID")  
+            topologyFeatureClass = featuredataset + "/fc_buffer"
+        else:
+            topologyFeatureClass = fc
+        # get the overlaps from the topology
+        arcpy.AddMessage("STEP 2: Getting overlapping features")
         arcpy.AddMessage(SPACER + "Creating topology")
-        arcpy.CreateTopology_management('featuredataset', "topo1")
+        arcpy.CreateTopology_management(featuredataset, "topo1")
         arcpy.AddMessage(SPACER + "Adding feature class to topology")
-        arcpy.AddFeatureClassToTopology_management("featuredataset/topo1", fc, "1", "1")
+        arcpy.AddFeatureClassToTopology_management(featuredataset + "/topo1", topologyFeatureClass, "1", "1")
         arcpy.AddMessage(SPACER + "Adding topology rule")
-        arcpy.AddRuleToTopology_management("featuredataset/topo1", "Must Not Overlap (Area)", fc, "#", "#", "#")
+        arcpy.AddRuleToTopology_management(featuredataset + "/topo1", "Must Not Overlap (Area)", topologyFeatureClass, "#", "#", "#")
         arcpy.AddMessage(SPACER + "Validating topology")
-        arcpy.ValidateTopology_management('featuredataset/topo1')
+        arcpy.ValidateTopology_management(featuredataset + '/topo1')
         arcpy.AddMessage(SPACER + "Exporting topology errors")
-        arcpy.ExportTopologyErrors_management("featuredataset/topo1", "featuredataset", "topoerrors")  # errors will be in topoerrors_poly
+        arcpy.ExportTopologyErrors_management(featuredataset + "/topo1", featuredataset, "topoerrors")  # errors will be in topoerrors_poly
         arcpy.AddMessage(SPACER + "Getting unique overlapping polygons")
-        arcpy.Frequency_analysis("featuredataset/topoerrors_poly", "topoerrors_poly_Frequency", "OriginObjectID;DestinationObjectID", "#")  # get the unique overlapping features
+        arcpy.Frequency_analysis(featuredataset + "/topoerrors_poly", "topoerrors_poly_Frequency", "OriginObjectID;DestinationObjectID", "#")  # get the unique overlapping features
         arcpy.CopyRows_management("topoerrors_poly_Frequency", "topoerrors_poly_Frequency2", "#")  # copy the table so we can append the inverse overlapping features
         arcpy.Append_management("topoerrors_poly_Frequency2", "topoerrors_poly_Frequency", "NO_TEST", """FREQUENCY "FREQUENCY" true true false 4 Long 0 0 ,First,#,topoerrors_poly_Frequency2,FREQUENCY,-1,-1;OriginObjectID "Feature 1" true true false 4 Long 0 0 ,First,#,topoerrors_poly_Frequency2,DestinationObjectID,-1,-1;DestinationObjectID "Feature 2" true true false 4 Long 0 0 ,First,#,topoerrors_poly_Frequency2,OriginObjectID,-1,-1""", "#")  # append the inverse overlapping features
         arcpy.Delete_management(r'topoerrors_poly_Frequency2')  # delete the temporary table
@@ -204,13 +227,13 @@ class ExplodeOverlappingPolygons(object):
         arcpy.Delete_management(r'unique_overlaps')  # delete the temporary table
         arcpy.Delete_management(r'topoerrors_poly_Frequency')  # delete the temporary table
         arcpy.AddMessage(SPACER + "Deleting the topologies")
-        arcpy.Delete_management(r'featuredataset\topo1')  # delete the topology
-        arcpy.Delete_management(r'featuredataset\topoerrors_line')  # delete the line topo errors
-        arcpy.Delete_management(r'featuredataset\topoerrors_point')  # delete the point topo errors
-        arcpy.Delete_management(r'featuredataset\topoerrors_poly')  # delete the poly topo errors
+        arcpy.Delete_management(featuredataset + '/topo1')  # delete the topology
+        arcpy.Delete_management(featuredataset + '/topoerrors_line')  # delete the line topo errors
+        arcpy.Delete_management(featuredataset + '/topoerrors_point')  # delete the point topo errors
+        arcpy.Delete_management(featuredataset + '/topoerrors_poly')  # delete the poly topo errors
         # create the non-overlapping feature groups
-        arcpy.AddMessage("STEP 2: Creating the groups of non-overlapping features")
-        arcpy.AddMessage(SPACER + "Iterating through the features to created the groups")
+        arcpy.AddMessage("STEP 3: Creating the groups of non-overlapping features")
+        arcpy.AddMessage(SPACER + "Iterating through the features to create the groups")
         unique_origin_ids = [int(t[0]) for t in arcpy.da.TableToNumPyArray("unique_OriginObjectIDs", "OriginObjectID").tolist()]
         feature_groups = arcpy.da.TableToNumPyArray("unique_overlaps_sorted", ["OriginObjectID", "DestinationObjectID", "overlap_count", "grp"], null_value=0)
         for unique_origin_id in unique_origin_ids:
@@ -233,13 +256,26 @@ class ExplodeOverlappingPolygons(object):
         arcpy.Frequency_analysis("feature_groups", "feature_groups_Frequency1", "OriginObjectID;grp", "#")
         arcpy.Delete_management("feature_groups")
         arcpy.AddMessage(SPACER + "Adding the grp field to the feature class")
+        if buffer:
+            arcpy.AddMessage(SPACER + "Recreating original OBJECTID values")
+            arcpy.AddField_management('feature_groups_Frequency1', 'unbuffered_fc_OBJECTID', "LONG")
+            tv = arcpy.MakeTableView_management('feature_groups_Frequency1')
+            fl = arcpy.MakeFeatureLayer_management(featuredataset + '/fc_buffer')
+            arcpy.AddJoin_management(tv, "OriginObjectID", fl, "OBJECTID")
+            arcpy.CalculateField_management(tv, "feature_groups_Frequency1.unbuffered_fc_OBJECTID", "[fc_buffer.unbuffered_fc_OBJECTID]", "VB", "#")
+            arcpy.RemoveJoin_management(tv, "fc_buffer")
+            arcpy.CalculateField_management(tv, "OriginObjectID", "[unbuffered_fc_OBJECTID]", "VB", "#")
+            arcpy.DeleteField_management(tv, "unbuffered_fc_OBJECTID")
+            arcpy.Delete_management(featuredataset + '/fc_buffer')  # delete the buffered features
+            arcpy.Delete_management(tv)
+            arcpy.Delete_management(fl)
         arcpy.JoinField_management(fc, "OBJECTID", "feature_groups_Frequency1", "OriginObjectID", "grp")
         arcpy.Delete_management("feature_groups_Frequency1")
-        arcpy.AddMessage(SPACER + "Creating group 0 for non-overlapping features")
+#         arcpy.AddMessage(SPACER + "Creating group 0 for non-overlapping features")
         arcpy.MakeFeatureLayer_management(fc, FEATURE_CLASS_LAYER)
         arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "NEW_SELECTION", "grp IS Null")
         count = arcpy.GetCount_management(FEATURE_CLASS_LAYER)
-        arcpy.AddMessage(SPACER + str(count) + " records selected")
+#         arcpy.AddMessage(SPACER + str(count) + " records selected")
         arcpy.CalculateField_management(FEATURE_CLASS_LAYER, "grp", "0", "VB", "#")
         arcpy.SelectLayerByAttribute_management(FEATURE_CLASS_LAYER, "CLEAR_SELECTION")
         arcpy.AddMessage(SPACER + "Getting the unique non-overlapping feature groups to export")
@@ -247,7 +283,7 @@ class ExplodeOverlappingPolygons(object):
         unique_non_overlapping_groups = arcpy.da.TableToNumPyArray(FEATURE_GROUPS_FREQUENCY, "grp").tolist()
         arcpy.Delete_management(FEATURE_GROUPS_FREQUENCY)
         # Exporting the groups of non-overlapping features
-        arcpy.AddMessage("STEP 3: Exporting the groups of non-overlapping features")
+        arcpy.AddMessage("STEP 4: Exporting the groups of non-overlapping features")
         arcpy.AddMessage(SPACER + "Creating the feature dataset")
         arcpy.CreateFeatureDataset_management(arcpy.env.workspace, desc.name + "_feature_groups", "GEOGCS['GCS_WGS_1984',DATUM['D_WGS_1984',SPHEROID['WGS_1984',6378137.0,298.257223563]],PRIMEM['Greenwich',0.0],UNIT['Degree',0.0174532925199433]];-400 -400 1000000000;-100000 10000;-100000 10000;8.98315284119522E-09;0.001;0.001;IsHighPrecision")
         for unique_non_overlapping_group in unique_non_overlapping_groups:
