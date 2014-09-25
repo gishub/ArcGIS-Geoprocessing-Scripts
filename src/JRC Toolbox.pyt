@@ -133,6 +133,7 @@ class TabulateAreaForFeatureDataset(object):
         return
 
 class ExplodeOverlappingPolygons(object):
+    #this is based on the graph colouring method found here: http://gis.stackexchange.com/questions/32217/exploding-overlapping-to-new-non-overlapping-polygons
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
         self.label = "Explode overlapping polygons"
