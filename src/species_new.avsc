@@ -1,0 +1,110 @@
+{
+  "type": "record",
+  "name": "species",
+  "fields": [
+     {
+      "name": "SEASONAL",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "DATA_SENS",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "SUBPOP",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "ID_NO",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "LEGEND",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "COMPILER",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "SENS_COMM",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "Shape_Area",
+      "type": "float"
+    },
+    {
+      "name": "SOURCE",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "AreaKm2",
+      "type": [ "float", "null" ]
+    },
+    {
+      "name": "speciesid2",
+      "type": "int"
+    },
+    {
+      "name": "ORIGIN",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "CITATION",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "TAX_COMMEN",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int"
+    },
+    {
+      "name": "PRESENCE",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "Ecosystem",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "Owner",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "DIST_COMM",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "BINOMIAL",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "YEAR",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "SUBSPECIES",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "Shape_Length",
+      "type": "float"
+    },
+    {
+      "name": "ISLAND",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "Shape",
+      "type": "bytes"
+    },
+    {
+      "name": "SpeciesID",
+      "type": [ "string", "null" ]
+    }
+  ]
+}
