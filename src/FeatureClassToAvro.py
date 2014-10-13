@@ -26,8 +26,12 @@ while row:
     data = {}
     for field in fields:
         if row.getValue(field.name) != None:
-            if field.name =="Shape":
-                data[field.name] ="Whatever"
+            if field.name == "Shape":
+                print row.getValue('shape').WKB
+#                 data["Shape"] = row.getValue('shape').WKB  #error
+#                 data["Shape"] = bytearray()  #error
+#                 data["Shape"] = str(bytearray())  #ran
+                data["Shape"] = str(row.getValue('shape').WKB)  #error
             else:
                 data[field.name] = row.getValue(field.name)
     print data
