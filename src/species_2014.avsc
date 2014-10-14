@@ -1,0 +1,94 @@
+{
+  "type": "record",
+  "name": "species",
+  "fields": [
+     {
+      "name": "seasonal",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "data_sens",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "subpop",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "id_no",
+      "type": [ "double", "null" ]
+    },
+    {
+      "name": "legend",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "compiler",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "sens_comm",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "source",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "origin",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "citation",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "tax_commen",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int"
+    },
+    {
+      "name": "presence",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "ecosystem",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "owner",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "dist_comm",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "binomial",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "year",
+      "type": [ "int", "null" ]
+    },
+    {
+      "name": "subspecies",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "island",
+      "type": [ "string", "null" ]
+    },
+    {
+      "name": "shape",
+      "type": "bytes"
+    },
+    {
+      "name": "speciesid",
+      "type": [ "string", "null" ]
+    }
+  ]
+}
