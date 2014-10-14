@@ -7,8 +7,8 @@ from avro.io import DatumReader, DatumWriter
 from datetime import date
 
 # get the feature class
-# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_aug14_100km2_moll'
-fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
+# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
 
 # get the field list for the feature class
