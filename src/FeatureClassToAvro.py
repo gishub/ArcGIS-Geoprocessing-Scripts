@@ -3,45 +3,48 @@ sys.path.append(r"C:\Anaconda\Lib\site-packages")
 import avro
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
-from avro.io import DatumReader, DatumWriter
+from avro.io import DatumReader, DatumWriter, SchemaResolutionException
 from datetime import date
-
+USE_WKB = True  # set to true to encode using well-known binary
 # get the feature class
-# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
-fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
+# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
+outputfilePrefix = "E:/cottaan/My Documents/" + desc.name
 
 # get the field list for the feature class
 fields = arcpy.ListFields(fc)
 fieldsArray = []
 for field in fields:
-    if field.name in ["shape", "geom"]:
-        if field.type in ["OID"]:
-            fieldType = 'long'
-        elif field.type in ["SmallInteger", "Integer"]:
-            fieldType = 'int'
-        elif field.type == "Geometry":
+    if field.type in ["OID"]:
+        fieldType = 'long'
+    elif field.type in ["SmallInteger", "Integer"]:
+        fieldType = 'int'
+    elif field.type == "Geometry":
+        if USE_WKB:
             fieldType = 'bytes'
-        elif field.type == "Date":
+        else:
             fieldType = 'string'
-        else:
-            fieldType = field.type.lower()
-        if field.isNullable:
-            fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
-        else:
-            fieldsArray.append({"name": field.name, "type": fieldType})
+    elif field.type == "Date":
+        fieldType = 'string'
+    else:
+        fieldType = field.type.lower()
+    if field.isNullable:
+        fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
+    else:
+        fieldsArray.append({"name": field.name, "type": fieldType})
 
 # create the schema from the fields
 schemajson = {"type": "record", "name": desc.name, "fields": fieldsArray }
 schemajsonstr = json.dumps(schemajson, None)
-f = open("E:/cottaan/My Documents/" + desc.name + ".avsc", "w")
+f = open(outputfilePrefix + ".avsc", "w")
 f.write(schemajsonstr)
 f.close()
 schema = avro.schema.parse(schemajsonstr)
-print "Schema written to " + "E:/cottaan/My Documents/" + desc.name + ".avsc"
+print "Schema written to " + outputfilePrefix + ".avsc"
 
 # open a writer to write the data
-writer = DataFileWriter(open("E:/cottaan/My Documents/" + desc.name + ".avro", "w"), DatumWriter(), schema)
+writer = DataFileWriter(open(outputfilePrefix + ".avro", "w"), DatumWriter(), schema)
  
 # get a cursor to the records
 cursor = arcpy.SearchCursor(fc)
@@ -56,21 +59,31 @@ while row:
     print "Processing " + str(count) + " of " + str(total) + " rows"  
     data = {}
     for field in fields:
-        if field.name in ["shape", "geom"]:
-            if row.getValue(field.name) != None:
-                if field.name.lower() in ["shape", "geom"]:
-                    data[field.name] = str(row.getValue(field.name).WKB)  
-                elif field.type == "Date":
-                    data[field.name] = date.isoformat(row.getValue(field.name))
+        if row.getValue(field.name) != None:
+            if field.name.lower() in ["shape", "geom"]:
+                if USE_WKB:
+                    data[field.name] = str(row.getValue(field.name).WKB)
                 else:
-                    data[field.name] = row.getValue(field.name)
+                    data[field.name] = row.getValue(field.name).WKT  
+            elif field.type == "Date":
+                data[field.name] = date.isoformat(row.getValue(field.name))
+            else:
+                data[field.name] = row.getValue(field.name)
     writer.append(data)
-#     writer.sync()
     row = cursor.next()
     count = count + 1
-    if count ==3:
-        break
-# writer.flush()
+#     if count == 3:
+#         break
 writer.close()
-print "Data written to " + desc.name + ".avro"
-
+print "Data written to " + outputfilePrefix + ".avro"
+print "Checking file.."
+reader = DataFileReader(open(outputfilePrefix + ".avro", "r"), DatumReader())
+try:
+    for row in reader:
+        assert row
+except (SchemaResolutionException) as e:
+    print "Error parsing the Avro file"
+    print e
+finally:
+    reader.close()
+print "Finished" 
