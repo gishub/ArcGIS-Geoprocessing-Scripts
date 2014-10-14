@@ -15,20 +15,21 @@ desc = arcpy.Describe(fc)
 fields = arcpy.ListFields(fc)
 fieldsArray = []
 for field in fields:
-    if field.type in ["OID"]:
-        fieldType = 'long'
-    elif field.type in ["SmallInteger", "Integer"]:
-        fieldType = 'int'
-    elif field.type == "Geometry":
-        fieldType = 'bytes'
-    elif field.type == "Date":
-        fieldType = 'string'
-    else:
-        fieldType = field.type.lower()
-    if field.isNullable:
-        fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
-    else:
-        fieldsArray.append({"name": field.name, "type": fieldType})
+    if field.name in ["shape", "geom"]:
+        if field.type in ["OID"]:
+            fieldType = 'long'
+        elif field.type in ["SmallInteger", "Integer"]:
+            fieldType = 'int'
+        elif field.type == "Geometry":
+            fieldType = 'bytes'
+        elif field.type == "Date":
+            fieldType = 'string'
+        else:
+            fieldType = field.type.lower()
+        if field.isNullable:
+            fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
+        else:
+            fieldsArray.append({"name": field.name, "type": fieldType})
 
 # create the schema from the fields
 schemajson = {"type": "record", "name": desc.name, "fields": fieldsArray }
@@ -55,20 +56,21 @@ while row:
     print "Processing " + str(count) + " of " + str(total) + " rows"  
     data = {}
     for field in fields:
-        if row.getValue(field.name) != None:
-            if field.name.lower() in ["shape", "geom"]:
-                data[field.name] = str(row.getValue(field.name).WKB)  
-            elif field.type == "Date":
-                data[field.name] = date.isoformat(row.getValue(field.name))
-            else:
-                data[field.name] = row.getValue(field.name)
+        if field.name in ["shape", "geom"]:
+            if row.getValue(field.name) != None:
+                if field.name.lower() in ["shape", "geom"]:
+                    data[field.name] = str(row.getValue(field.name).WKB)  
+                elif field.type == "Date":
+                    data[field.name] = date.isoformat(row.getValue(field.name))
+                else:
+                    data[field.name] = row.getValue(field.name)
     writer.append(data)
-    writer.sync()
+#     writer.sync()
     row = cursor.next()
     count = count + 1
     if count ==3:
         break
-writer.flush()
+# writer.flush()
 writer.close()
 print "Data written to " + desc.name + ".avro"
 
