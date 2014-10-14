@@ -5,7 +5,7 @@ import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, SchemaResolutionException
 from datetime import date
-USE_WKB = True  # set to true to encode using well-known binary
+USE_WKB = False  # set to true to encode using well-known binary
 # get the feature class
 fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
 # fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
