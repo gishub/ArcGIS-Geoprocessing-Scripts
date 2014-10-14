@@ -52,14 +52,17 @@ while row:
     data = {}
     for field in fields:
         if row.getValue(field.name) != None:
-            if field.name.lower() == "shape":
+            if field.name.lower() in ["shape", "geom"]:
                 data[field.name] = str(row.getValue(field.name).WKB)  
-            elif field.type =="Date":
+            elif field.type == "Date":
                 data[field.name] = date.isoformat(row.getValue(field.name))
             else:
                 data[field.name] = row.getValue(field.name)
     writer.append(data)
+    writer.sync()
     row = cursor.next()
     count = count + 1
+    break
+writer.flush()
 writer.close()
 print "Data written to " + desc.name + ".avro"
