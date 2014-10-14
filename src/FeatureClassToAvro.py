@@ -7,8 +7,8 @@ from avro.io import DatumReader, DatumWriter
 from datetime import date
 
 # get the feature class
-fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
-# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
 
 # get the field list for the feature class
@@ -32,8 +32,12 @@ for field in fields:
 
 # create the schema from the fields
 schemajson = {"type": "record", "name": desc.name, "fields": fieldsArray }
-schema = avro.schema.parse(json.dumps(schemajson, None))
-print "Schema created"
+schemajsonstr = json.dumps(schemajson, None)
+f = open("E:/cottaan/My Documents/" + desc.name + ".avsc", "w")
+f.write(schemajsonstr)
+f.close()
+schema = avro.schema.parse(schemajsonstr)
+print "Schema written to " + "E:/cottaan/My Documents/" + desc.name + ".avsc"
 
 # open a writer to write the data
 writer = DataFileWriter(open("E:/cottaan/My Documents/" + desc.name + ".avro", "w"), DatumWriter(), schema)
@@ -62,7 +66,9 @@ while row:
     writer.sync()
     row = cursor.next()
     count = count + 1
-    break
+    if count ==3:
+        break
 writer.flush()
 writer.close()
 print "Data written to " + desc.name + ".avro"
+
