@@ -54,6 +54,5 @@ while row:
     writer.append(data)
     row = cursor.next()
     count = count + 1
-    break
 writer.close()
 print "Data written to " + desc.name + ".avro"
