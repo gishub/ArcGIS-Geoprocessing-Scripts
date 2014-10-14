@@ -4,20 +4,25 @@ import avro
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
-from StringIO import StringIO
+from datetime import date
 
 # get the feature class
-fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_aug14_100km2_moll'
+# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_aug14_100km2_moll'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
 
 # get the field list for the feature class
 fields = arcpy.ListFields(fc)
 fieldsArray = []
 for field in fields:
-    if field.type == "OID":
+    if field.type in ["OID"]:
         fieldType = 'long'
+    elif field.type in ["SmallInteger", "Integer"]:
+        fieldType = 'int'
     elif field.type == "Geometry":
         fieldType = 'bytes'
+    elif field.type == "Date":
+        fieldType = 'string'
     else:
         fieldType = field.type.lower()
     if field.isNullable:
@@ -43,12 +48,14 @@ total = str(arcpy.GetCount_management(fc))
 row = cursor.next()
 count = 1
 while row:
-    print "Processing " + str(count) + " of " + str(total) + " rows"
+    print "Processing " + str(count) + " of " + str(total) + " rows"  
     data = {}
     for field in fields:
         if row.getValue(field.name) != None:
             if field.name.lower() == "shape":
                 data[field.name] = str(row.getValue(field.name).WKB)  
+            elif field.type =="Date":
+                data[field.name] = date.isoformat(row.getValue(field.name))
             else:
                 data[field.name] = row.getValue(field.name)
     writer.append(data)
