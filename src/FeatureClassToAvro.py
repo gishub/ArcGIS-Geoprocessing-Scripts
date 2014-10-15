@@ -7,8 +7,8 @@ from avro.io import DatumReader, DatumWriter, SchemaResolutionException
 from datetime import date
 USE_WKB = False  # set to true to encode using well-known binary
 # get the feature class
-fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
-# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+# fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\wdpa_latest_14_10_14'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
 outputfilePrefix = "E:/cottaan/My Documents/" + desc.name
 
@@ -70,6 +70,7 @@ while row:
             else:
                 data[field.name] = row.getValue(field.name)
     writer.append(data)
+    writer.sync()
     row = cursor.next()
     count = count + 1
 #     if count == 3:
