@@ -16,11 +16,12 @@ outputfilePrefix = "C:/Users/cottaan/Documents/" + desc.name
 
 # get the field list for the feature class
 fields_unfiltered = arcpy.ListFields(fc)
-fieldnames_species = [u'OBJECTID', u'id_no', u'binomial', u'presence', u'origin', u'compiler', u'year', u'citation', u'source', u'dist_comm', u'island', u'subspecies', u'subpop', u'data_sens', u'sens_comm', u'legend', u'seasonal', u'owner', u'ecosystem', u'areakm2', u'taxonid', u'subpop_id', u'rl_update', u'rl_update_notes', u'rl_update_date', u'tax_comm', u'assessmentid_pp''shape']
-for i in range(1, len(fieldnames_species)):
+fieldnames_species = ['shape','OBJECTID','id_no','binomial','presence','origin','compiler','year','citation','source','dist_comm','island','subspecies','subpop','data_sens','sens_comm','legend','seasonal','owner','ecosystem','areakm2','taxonid','subpop_id','rl_update','rl_update_notes','rl_update_date','tax_comm','assessmentid_pp']
+# fieldnames_species = ['shape']
+for i in range(len(fieldnames_species)):
     outputfilePrefix = "C:/Users/cottaan/Documents/" + desc.name + "_" + str(i)
 
-    fields = [f for f in fields_unfiltered if f.name in fieldnames_species[i:i + 1]]
+    fields = [f for f in fields_unfiltered if f.name in fieldnames_species[:i + 1]]
     print "\nCreating an avro file with the following names: " + ",".join([f.name for f in fields])
     fieldsArray = []
     # fieldsArray.append({'name' : 'shape', 'type':'string'})
