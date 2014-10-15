@@ -61,7 +61,7 @@ while row:
         if row.getValue(field.name) != None:
             if field.name.lower() in ["shape", "geom"]:
                 if USE_WKB:
-                    data[field.name] = str(row.getValue(field.name).WKB)
+                    data[field.name] = bytes(row.getValue(field.name).WKB)
                 else:
                     data[field.name] = row.getValue(field.name).WKT  
             elif field.type == "Date":
