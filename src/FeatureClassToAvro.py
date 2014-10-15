@@ -71,8 +71,8 @@ while row:
     writer.append(data)
     row = cursor.next()
     count = count + 1
-    if count == 50:
-        break
+#     if count == 50:
+#         break
 writer.close()
 print "Data written to " + outputfilePrefix + ".avro"
 print "\nChecking file.."
