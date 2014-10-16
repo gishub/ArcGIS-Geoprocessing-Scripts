@@ -1,3 +1,8 @@
+import avro, json
+import avro.schema
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter, SchemaResolutionException
+from datetime import date
 import arcpy, numpy
 # constants
 FEATURE_CLASS_LAYER = "fc_layer"
@@ -28,7 +33,7 @@ class Toolbox(object):
         self.alias = ""
 
         # List of tool classes associated with this toolbox
-        self.tools = [TabulateAreaForFeatureDataset, ExplodeOverlappingPolygons]
+        self.tools = [TabulateAreaForFeatureDataset, ExplodeOverlappingPolygons, FeatureClassToAvro]
 
 
 class TabulateAreaForFeatureDataset(object):
@@ -133,7 +138,7 @@ class TabulateAreaForFeatureDataset(object):
         return
 
 class ExplodeOverlappingPolygons(object):
-    #this is based on the graph colouring method found here: http://gis.stackexchange.com/questions/32217/exploding-overlapping-to-new-non-overlapping-polygons
+    # this is based on the graph colouring method found here: http://gis.stackexchange.com/questions/32217/exploding-overlapping-to-new-non-overlapping-polygons
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
         self.label = "Explode overlapping polygons"
@@ -297,3 +302,118 @@ class ExplodeOverlappingPolygons(object):
         arcpy.Delete_management(FEATURE_CLASS_LAYER)
         arcpy.DeleteField_management(fc, "grp")
         return
+
+class FeatureClassToAvro(object):
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "FeatureClass to Avro"
+        self.description = "Exports a FeatureClass to an Apache Avro file using deflate compression"
+        self.canRunInBackground = False
+
+    def getParameterInfo(self):
+        param0 = arcpy.Parameter(displayName="Input feature class", name="input_feature_class", datatype="GPFeatureLayer", parameterType="Required", direction="Input")
+        param1 = arcpy.Parameter(displayName="Output folder", name="output_folder", datatype="DEFolder", parameterType="Required", direction="Input")
+        param1.value = "E:/export/"
+        param2 = arcpy.Parameter(displayName="Use Well-Known Text", name="USE_WKB", datatype="GPBoolean", parameterType="Optional", direction="Input")
+        param2.value = False
+        return [param0, param1, param2]
+    
+    def isLicensed(self):
+        """Set whether tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        fc = parameters[0].valueAsText
+        outputFolder = parameters[1].valueAsText
+        USE_WKB = parameters[2].valueAsText
+        desc = arcpy.Describe(fc)
+        outputfilePrefix = outputFolder + "/" + desc.name
+        arcpy.AddMessage("Writing Avro file to " + outputfilePrefix + ".avro")
+        
+        # get the field list for the feature class
+        fields = arcpy.ListFields(fc)
+        fieldsArray = []
+        for field in fields:
+            if field.type in ["OID"]:
+                fieldType = 'long'
+            elif field.type in ["SmallInteger", "Integer"]:
+                fieldType = 'int'
+            elif field.type == "Geometry":
+                if USE_WKB:
+                    fieldType = 'bytes'
+                else:
+                    fieldType = 'string'
+            elif field.type == "Date":
+                fieldType = 'string'
+            else:
+                fieldType = field.type.lower()
+            if field.isNullable:
+                fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
+            else:
+                fieldsArray.append({"name": field.name, "type": fieldType})
+        
+        # create the schema from the fields
+        schemajson = {"type": "record", "name": desc.name, "fields": fieldsArray }
+        schemajsonstr = json.dumps(schemajson, None)
+        f = open(outputfilePrefix + ".avsc", "w")
+        f.write(schemajsonstr)
+        f.close()
+        schema = avro.schema.parse(schemajsonstr)
+        print "Schema written to " + outputfilePrefix + ".avsc"
+        arcpy.AddMessage("Schema written to " + outputfilePrefix + ".avsc")
+        
+        # open a writer to write the data
+        writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema, "deflate")
+         
+        # get a cursor to the records
+        cursor = arcpy.SearchCursor(fc)
+         
+        # get the count
+        total = str(arcpy.GetCount_management(fc))
+         
+        # iterate through the records and write the dtaa
+        row = cursor.next()
+        count = 0
+        while row:
+            print "Processing " + str(count) + " of " + str(total) + " rows" 
+            arcpy.AddMessage("Processing " + str(count) + " of " + str(total) + " rows")
+            data = {}
+            for field in fields:
+                if row.getValue(field.name) != None:
+                    if field.name.lower() in ["shape", "geom"]:
+                        if USE_WKB:
+                            data[field.name] = bytes(row.getValue(field.name).WKB)
+                        else:
+                            data[field.name] = row.getValue(field.name).WKT  
+                    elif field.type == "Date":
+                        data[field.name] = date.isoformat(row.getValue(field.name))
+                    else:
+                        data[field.name] = row.getValue(field.name)
+            writer.append(data)
+            row = cursor.next()
+            count = count + 1
+        #     if count == 50:
+        #         break
+        writer.close()
+        print "Data written to " + outputfilePrefix + ".avro"
+        arcpy.AddMessage("Data written to " + outputfilePrefix + ".avro")
+        print "\nChecking file.."
+        arcpy.AddMessage("\nChecking file..")
+        reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
+        for record in reader:
+            pass
+        #     print record
+        reader.close()
+        print "Finished" 
+        arcpy.AddMessage("Finished")

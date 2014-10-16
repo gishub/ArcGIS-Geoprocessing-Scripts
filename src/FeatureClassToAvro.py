@@ -9,10 +9,9 @@ USE_WKB = True  # set to true to encode using well-known binary
 # get the feature class
 fc = r'E:\export\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+fc=r'E:\export\wdpa_latest_14_10_14.gdb\wdpa_latest_14_10_14'
 desc = arcpy.Describe(fc)
-outputfilePrefix = "C:/Users/cottaan/Documents/" + desc.name
 outputfilePrefix = "E:/export/" + desc.name
-
 
 # get the field list for the feature class
 fields = arcpy.ListFields(fc)
