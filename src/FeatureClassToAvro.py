@@ -73,13 +73,13 @@ while row:
     writer.append(data)
     row = cursor.next()
     count = count + 1
-    if count == 1:
+    if count == 100:
         break
 writer.close()
 print "Data written to " + outputfilePrefix + ".avro"
 print "\nChecking file.."
 reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
 for record in reader:
-    print record
+    print record['wdpa_id']
 reader.close()
 print "Finished" 
