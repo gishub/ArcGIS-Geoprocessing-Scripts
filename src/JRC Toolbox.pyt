@@ -356,7 +356,6 @@ class FeatureClassToAvro(object):
             arcpy.AddMessage("Using WKT")
         desc = arcpy.Describe(fc)
         outputfilePrefix = outputFolder + "/" + desc.name
-        arcpy.AddMessage("Writing Avro file to " + outputfilePrefix + ".avro")
         
         # get the field list for the feature class
         fields = arcpy.ListFields(fc)
@@ -380,7 +379,6 @@ class FeatureClassToAvro(object):
         f.write(schemajsonstr)
         f.close()
         schema = avro.schema.parse(schemajsonstr)
-        arcpy.AddMessage("Schema written to " + outputfilePrefix + ".avsc")
 
         #create the comment update sql stubs
         commentSQL = "ALTER TABLE " + desc.name + " SET TBLPROPERTIES ('comment' = '');\n"
@@ -397,7 +395,6 @@ class FeatureClassToAvro(object):
         f = open(outputfilePrefix + ".sql", "w")
         f.write(commentSQL)
         f.close()
-        arcpy.AddMessage("Comment update stubs written to " + outputfilePrefix + ".sql")
         
         # open a writer to write the data
         writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema, "deflate")
@@ -432,6 +429,8 @@ class FeatureClassToAvro(object):
         #         break
         writer.close()
         arcpy.AddMessage("Data written to " + outputfilePrefix + ".avro")
+        arcpy.AddMessage("Schema written to " + outputfilePrefix + ".avsc")
+        arcpy.AddMessage("Comment update stubs written to " + outputfilePrefix + ".sql")
 #         print "\nChecking file.."
 #         arcpy.AddMessage("\nChecking file..")
 #         reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
