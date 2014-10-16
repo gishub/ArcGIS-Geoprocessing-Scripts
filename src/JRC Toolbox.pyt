@@ -387,7 +387,7 @@ class FeatureClassToAvro(object):
                     fieldType = 'string'
             if fieldType == 'long': #Avro long maps to Hive bigint
                 fieldType = 'bigint'
-            commentSQL = commentSQL + "ALTER TABLE " + desc.name + " CHANGE " + field.name.lower() + " " + field.name + " " + fieldType + " COMMENT '';\n"
+            commentSQL = commentSQL + "ALTER TABLE " + desc.name + " CHANGE " + field.name.lower() + " " + field.name.lower() + " " + fieldType + " COMMENT '';\n"
         f = open(outputfilePrefix + ".sql", "w")
         f.write(commentSQL)
         f.close()
@@ -401,7 +401,7 @@ class FeatureClassToAvro(object):
         # get the count
         total = str(arcpy.GetCount_management(fc))
          
-        # iterate through the records and write the dtaa
+        # iterate through the records and write the data
         row = cursor.next()
         count = 0
         while row:
