@@ -43,7 +43,7 @@ schema = avro.schema.parse(schemajsonstr)
 print "Schema written to " + outputfilePrefix + ".avsc"
 
 # open a writer to write the data
-writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema)
+writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema,"deflate")
  
 # get a cursor to the records
 cursor = arcpy.SearchCursor(fc)
@@ -71,13 +71,14 @@ while row:
     writer.append(data)
     row = cursor.next()
     count = count + 1
-#     if count == 50:
-#         break
+    if count == 50:
+        break
 writer.close()
 print "Data written to " + outputfilePrefix + ".avro"
 print "\nChecking file.."
 reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
 for record in reader:
-    print record
+    pass
+#     print record
 reader.close()
 print "Finished" 
