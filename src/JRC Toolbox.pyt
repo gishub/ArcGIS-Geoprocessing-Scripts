@@ -314,8 +314,8 @@ class FeatureClassToAvro(object):
         param0 = arcpy.Parameter(displayName="Input feature class", name="input_feature_class", datatype="GPFeatureLayer", parameterType="Required", direction="Input")
         param1 = arcpy.Parameter(displayName="Output folder", name="output_folder", datatype="DEFolder", parameterType="Required", direction="Input")
         param1.value = "E:/export/"
-        param2 = arcpy.Parameter(displayName="Use Well-Known Text", name="USE_WKB", datatype="GPBoolean", parameterType="Optional", direction="Input")
-        param2.value = False
+        param2 = arcpy.Parameter(displayName="Use Well-Known Binary", name="use_wkb", datatype="GPBoolean", parameterType="Optional", direction="Input")
+        param2.value = True
         return [param0, param1, param2]
     
     def isLicensed(self):
@@ -336,7 +336,11 @@ class FeatureClassToAvro(object):
     def execute(self, parameters, messages):
         fc = parameters[0].valueAsText
         outputFolder = parameters[1].valueAsText
-        USE_WKB = parameters[2].valueAsText
+        use_wkb = parameters[2].value
+        if (use_wkb == True):
+            arcpy.AddMessage("Using WKB")
+        else:
+            arcpy.AddMessage("Using WKT")
         desc = arcpy.Describe(fc)
         outputfilePrefix = outputFolder + "/" + desc.name
         arcpy.AddMessage("Writing Avro file to " + outputfilePrefix + ".avro")
@@ -350,7 +354,7 @@ class FeatureClassToAvro(object):
             elif field.type in ["SmallInteger", "Integer"]:
                 fieldType = 'int'
             elif field.type == "Geometry":
-                if USE_WKB:
+                if use_wkb:
                     fieldType = 'bytes'
                 else:
                     fieldType = 'string'
@@ -390,7 +394,7 @@ class FeatureClassToAvro(object):
             for field in fields:
                 if row.getValue(field.name) != None:
                     if field.name.lower() in ["shape", "geom"]:
-                        if USE_WKB:
+                        if use_wkb:
                             data[field.name] = bytes(row.getValue(field.name).WKB)
                         else:
                             data[field.name] = row.getValue(field.name).WKT  
