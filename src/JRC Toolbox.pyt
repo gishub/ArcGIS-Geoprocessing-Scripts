@@ -370,7 +370,6 @@ class FeatureClassToAvro(object):
         f.write(schemajsonstr)
         f.close()
         schema = avro.schema.parse(schemajsonstr)
-        print "Schema written to " + outputfilePrefix + ".avsc"
         arcpy.AddMessage("Schema written to " + outputfilePrefix + ".avsc")
         
         # open a writer to write the data
@@ -386,7 +385,6 @@ class FeatureClassToAvro(object):
         row = cursor.next()
         count = 0
         while row:
-            print "Processing " + str(count) + " of " + str(total) + " rows" 
             arcpy.AddMessage("Processing " + str(count) + " of " + str(total) + " rows")
             data = {}
             for field in fields:
@@ -406,14 +404,13 @@ class FeatureClassToAvro(object):
         #     if count == 50:
         #         break
         writer.close()
-        print "Data written to " + outputfilePrefix + ".avro"
         arcpy.AddMessage("Data written to " + outputfilePrefix + ".avro")
-        print "\nChecking file.."
-        arcpy.AddMessage("\nChecking file..")
-        reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
-        for record in reader:
-            pass
-        #     print record
-        reader.close()
-        print "Finished" 
-        arcpy.AddMessage("Finished")
+#         print "\nChecking file.."
+#         arcpy.AddMessage("\nChecking file..")
+#         reader = DataFileReader(open(outputfilePrefix + ".avro", "rb"), DatumReader())
+#         for record in reader:
+#             pass
+#         #     print record
+#         reader.close()
+#         print "Finished" 
+#         arcpy.AddMessage("Finished")
