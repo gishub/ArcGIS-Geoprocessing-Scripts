@@ -42,6 +42,7 @@ class TabulateAreaForFeatureDataset(object):
         self.label = "TabulateArea for FeatureDataset"
         self.description = "Iterates through all feature classes in a feature dataset and computes the zonal statistics for each feature class and appends the results into a single output table"
         self.canRunInBackground = False
+        self.category = "Raster intersection"
 
     def getParameterInfo(self):
         """Define parameter definitions"""
@@ -144,6 +145,7 @@ class ExplodeOverlappingPolygons(object):
         self.label = "Explode overlapping polygons"
         self.description = "Creates a new set of feature classes from a feature class that remove all overlapping polygons."
         self.canRunInBackground = False
+        self.category = "Raster intersection"
 
     def getParameterInfo(self):
         """Define parameter definitions"""
@@ -309,6 +311,7 @@ class FeatureClassToAvro(object):
         self.label = "FeatureClass to Avro"
         self.description = "Exports a FeatureClass to an Apache Avro file using deflate compression"
         self.canRunInBackground = False
+        self.category = "Hadoop"
 
     def getParameterInfo(self):
         param0 = arcpy.Parameter(displayName="Input feature class", name="input_feature_class", datatype="GPFeatureLayer", parameterType="Required", direction="Input")
@@ -333,6 +336,16 @@ class FeatureClassToAvro(object):
         parameter.  This method is called after internal validation."""
         return
 
+    def getAvroFieldTypeFromESRIFieldType(self, fieldType):
+            if fieldType in ["OID"]:
+                return 'long'
+            elif fieldType in ["SmallInteger", "Integer"]:
+                return 'int'
+            elif fieldType == "Date":
+                return 'string'
+            else:
+                return fieldType.lower()
+        
     def execute(self, parameters, messages):
         fc = parameters[0].valueAsText
         outputFolder = parameters[1].valueAsText
@@ -349,19 +362,12 @@ class FeatureClassToAvro(object):
         fields = arcpy.ListFields(fc)
         fieldsArray = []
         for field in fields:
-            if field.type in ["OID"]:
-                fieldType = 'long'
-            elif field.type in ["SmallInteger", "Integer"]:
-                fieldType = 'int'
-            elif field.type == "Geometry":
+            fieldType = self.getAvroFieldTypeFromESRIFieldType(field.type)
+            if field.type == "Geometry":
                 if use_wkb:
                     fieldType = 'bytes'
                 else:
                     fieldType = 'string'
-            elif field.type == "Date":
-                fieldType = 'string'
-            else:
-                fieldType = field.type.lower()
             if field.isNullable:
                 fieldsArray.append({"name": field.name, "type": [fieldType, "null"]})
             else:
@@ -375,6 +381,21 @@ class FeatureClassToAvro(object):
         f.close()
         schema = avro.schema.parse(schemajsonstr)
         arcpy.AddMessage("Schema written to " + outputfilePrefix + ".avsc")
+
+        #create the comment update sql stubs
+        commentSQL = "ALTER TABLE " + desc.name + " SET TBLPROPERTIES ('comment' = '');\n"
+        for field in fields:
+            fieldType = self.getAvroFieldTypeFromESRIFieldType(field.type)
+            if field.type == "Geometry":
+                if use_wkb:
+                    fieldType = 'bytes'
+                else:
+                    fieldType = 'string'
+            commentSQL = commentSQL + "ALTER TABLE " + desc.name + " CHANGE " + field.name.lower() + " " + field.name + " " + fieldType + " COMMENT '';\n"
+        f = open(outputfilePrefix + ".sql", "w")
+        f.write(commentSQL)
+        f.close()
+        arcpy.AddMessage("Comment update stubs written to " + outputfilePrefix + ".sql")
         
         # open a writer to write the data
         writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema, "deflate")
