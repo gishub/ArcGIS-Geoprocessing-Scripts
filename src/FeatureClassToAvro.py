@@ -8,8 +8,11 @@ from datetime import date
 USE_WKB = True  # set to true to encode using well-known binary
 # get the feature class
 fc = r'E:\export\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
+fc = r'E:\cottaan\My Documents\ArcGIS\iucn_rl_species_2014_2.gdb\iucn_rl_species_2014_2_no_sens'
 desc = arcpy.Describe(fc)
 outputfilePrefix = "C:/Users/cottaan/Documents/" + desc.name
+outputfilePrefix = "E:/export/" + desc.name
+
 
 # get the field list for the feature class
 fields = arcpy.ListFields(fc)
@@ -43,7 +46,7 @@ schema = avro.schema.parse(schemajsonstr)
 print "Schema written to " + outputfilePrefix + ".avsc"
 
 # open a writer to write the data
-writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema,"deflate")
+writer = DataFileWriter(open(outputfilePrefix + ".avro", "wb"), DatumWriter(), schema, "deflate")
  
 # get a cursor to the records
 cursor = arcpy.SearchCursor(fc)
@@ -71,8 +74,8 @@ while row:
     writer.append(data)
     row = cursor.next()
     count = count + 1
-    if count == 50:
-        break
+#     if count == 50:
+#         break
 writer.close()
 print "Data written to " + outputfilePrefix + ".avro"
 print "\nChecking file.."
