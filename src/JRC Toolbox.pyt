@@ -350,10 +350,6 @@ class FeatureClassToAvro(object):
         fc = parameters[0].valueAsText
         outputFolder = parameters[1].valueAsText
         use_wkb = parameters[2].value
-        if (use_wkb == True):
-            arcpy.AddMessage("Using WKB")
-        else:
-            arcpy.AddMessage("Using WKT")
         desc = arcpy.Describe(fc)
         outputfilePrefix = outputFolder + "/" + desc.name
         
