@@ -385,7 +385,7 @@ class FeatureClassToAvro(object):
         row = cursor.next()
         count = 0
         while row:
-            arcpy.AddMessage("Processing " + str(count) + " of " + str(total) + " rows")
+            arcpy.AddMessage("Processing " + str(count + 1) + " of " + str(total) + " rows")
             data = {}
             for field in fields:
                 if row.getValue(field.name) != None:
